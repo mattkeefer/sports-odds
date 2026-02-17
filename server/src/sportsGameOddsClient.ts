@@ -1,6 +1,7 @@
 import { EventsQuery, SportsEvent, SportsGameOddsResponse } from "./types.js";
 
-const BASE_URL = process.env.SPORTSGAMEODDS_BASE_URL ?? "https://api.sportsgameodds.com/v2";
+const BASE_URL =
+  process.env.SPORTSGAMEODDS_BASE_URL ?? "https://api.sportsgameodds.com/v2";
 
 function getApiKey(): string {
   const apiKey = process.env.SPORTSGAMEODDS_API_KEY;
@@ -10,7 +11,11 @@ function getApiKey(): string {
   return apiKey;
 }
 
-function addQueryParam(params: URLSearchParams, key: string, value: unknown): void {
+function addQueryParam(
+  params: URLSearchParams,
+  key: string,
+  value: unknown,
+): void {
   if (value === undefined || value === null || value === "") return;
   params.set(key, String(value));
 }
@@ -24,7 +29,7 @@ export async function getEvents(
   addQueryParam(params, "oddID", query.oddID);
   addQueryParam(params, "includeAltLines", query.includeAltLines);
   addQueryParam(params, "cursor", query.cursor);
-  addQueryParam(params, "limit", query.limit);
+  addQueryParam(params, "limit", 1); //query.limit);
 
   const url = `${BASE_URL}/events?${params.toString()}`;
   const response = await fetch(url, {
@@ -35,7 +40,9 @@ export async function getEvents(
 
   if (!response.ok) {
     const body = await response.text();
-    throw new Error(`SportsGameOdds request failed (${response.status}): ${body}`);
+    throw new Error(
+      `SportsGameOdds request failed (${response.status}): ${body}`,
+    );
   }
 
   const json = (await response.json()) as SportsGameOddsResponse<SportsEvent[]>;

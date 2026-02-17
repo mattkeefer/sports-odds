@@ -1,12 +1,25 @@
+import "dotenv/config";
 import { createServer } from "node:http";
 import { URL } from "node:url";
 import { getEvents } from "./sportsGameOddsClient.js";
 import { EventsQuery } from "./types.js";
 
 const PORT = Number(process.env.PORT ?? 4000);
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET,OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type",
+};
 
-function json(res: import("node:http").ServerResponse, statusCode: number, payload: unknown): void {
-  res.writeHead(statusCode, { "Content-Type": "application/json; charset=utf-8" });
+function json(
+  res: import("node:http").ServerResponse,
+  statusCode: number,
+  payload: unknown,
+): void {
+  res.writeHead(statusCode, {
+    "Content-Type": "application/json; charset=utf-8",
+    ...CORS_HEADERS,
+  });
   res.end(JSON.stringify(payload));
 }
 
@@ -42,6 +55,12 @@ const server = createServer(async (req, res) => {
 
   const url = new URL(req.url, `http://${req.headers.host ?? "localhost"}`);
 
+  if (req.method === "OPTIONS") {
+    res.writeHead(204, CORS_HEADERS);
+    res.end();
+    return;
+  }
+
   if (req.method === "GET" && url.pathname === "/health") {
     json(res, 200, { ok: true });
     return;
@@ -53,8 +72,10 @@ const server = createServer(async (req, res) => {
       const result = await getEvents(query);
       json(res, 200, result);
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Unknown backend error";
+      const message =
+        error instanceof Error ? error.message : "Unknown backend error";
       json(res, 502, { error: message });
+      console.error("Error handling /api/events request:", error);
     }
     return;
   }
