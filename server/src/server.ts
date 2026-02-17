@@ -39,8 +39,12 @@ function parseNumber(value: string | null): number | undefined {
 function toEventsQuery(searchParams: URLSearchParams): EventsQuery {
   return {
     oddsAvailable: parseBoolean(searchParams.get("oddsAvailable")),
+    finalized: parseBoolean(searchParams.get("finalized")),
+    live: parseBoolean(searchParams.get("live")),
     leagueID: searchParams.get("leagueID") ?? undefined,
     oddID: searchParams.get("oddID") ?? undefined,
+    bookmakerID: searchParams.get("bookmakerID") ?? undefined,
+    startsAfter: searchParams.get("startsAfter") ?? undefined,
     includeAltLines: parseBoolean(searchParams.get("includeAltLines")),
     cursor: searchParams.get("cursor") ?? undefined,
     limit: parseNumber(searchParams.get("limit")),

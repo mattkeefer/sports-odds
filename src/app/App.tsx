@@ -51,7 +51,12 @@ export default function App() {
       setLoadError(null);
 
       try {
-        const mapped = await fetchEvents(selectedLeagues, controller.signal);
+        const mapped = await fetchEvents(
+          selectedSportsbooks,
+          selectedLeagues,
+          pinnyMode,
+          controller.signal,
+        );
         setEvents(mapped);
       } catch (error) {
         if (error instanceof Error && error.name === "AbortError") {
@@ -69,18 +74,15 @@ export default function App() {
     void loadEvents();
 
     return () => controller.abort();
-  }, [refreshKey, selectedLeagues]);
+  }, [refreshKey, selectedLeagues, pinnyMode]);
 
   const filteredEvents = useMemo(() => {
-    const evMultiplier = pinnyMode ? 0.3 : 1.0;
-
     return events
       .map((event) => {
         const filteredBets = event.bets
           .filter((bet) => !hiddenBets.has(bet.id))
           .filter((bet) => selectedSportsbooks.includes(bet.sportsbook))
           .filter((bet) => bet.odds >= oddsRange[0] && bet.odds <= oddsRange[1])
-          .map((bet) => ({ ...bet, ev: bet.ev * evMultiplier }))
           .filter((bet) => bet.ev >= minEV)
           .map((bet) => calculateRecommendedBet(bet, bankroll));
 
@@ -96,7 +98,6 @@ export default function App() {
       .filter((event) => event.bets.length > 0);
   }, [
     events,
-    pinnyMode,
     hiddenBets,
     selectedSportsbooks,
     oddsRange,
@@ -201,8 +202,8 @@ export default function App() {
             <div className="mb-3 p-3 bg-orange-100 dark:bg-orange-900/30 border-l-4 border-orange-500 rounded">
               <p className="text-sm text-orange-800 dark:text-orange-300 flex items-center gap-2">
                 <AlertTriangle className="w-4 h-4" />
-                <strong>Pinny Mode Active:</strong> Using fair odds reference.
-                EVs are scaled down.
+                <strong>Pinny Mode Active:</strong> Using Pinnacle de-vigged
+                lines as fair odds.
               </p>
             </div>
           )}

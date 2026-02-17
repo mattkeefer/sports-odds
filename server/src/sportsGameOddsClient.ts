@@ -25,11 +25,15 @@ export async function getEvents(
 ): Promise<SportsGameOddsResponse<SportsEvent[]>> {
   const params = new URLSearchParams();
   addQueryParam(params, "oddsAvailable", query.oddsAvailable);
+  addQueryParam(params, "finalized", query.finalized);
+  addQueryParam(params, "live", query.live);
   addQueryParam(params, "leagueID", query.leagueID);
   addQueryParam(params, "oddID", query.oddID);
+  addQueryParam(params, "bookmakerID", query.bookmakerID);
+  addQueryParam(params, "startsAfter", query.startsAfter);
   addQueryParam(params, "includeAltLines", query.includeAltLines);
   addQueryParam(params, "cursor", query.cursor);
-  addQueryParam(params, "limit", 1); //query.limit);
+  addQueryParam(params, "limit", query.limit);
 
   const url = `${BASE_URL}/events?${params.toString()}`;
   const response = await fetch(url, {

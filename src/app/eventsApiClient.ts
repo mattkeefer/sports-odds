@@ -16,6 +16,7 @@ type ApiEvent = {
     string,
     {
       oddID?: string;
+      opposingOddID?: string;
       marketName?: string;
       sideID?: string;
       fairOdds?: string;
@@ -36,8 +37,13 @@ const BOOKMAKER_LABELS: Record<string, string> = {
   fanduel: "FanDuel",
   betmgm: "BetMGM",
   caesars: "Caesars",
+  fanatics: "Fanatics",
+  espnbet: "ESPN Bet",
+  thescorebet: "theScore Bet",
+  fliff: "Fliff",
   pointsbet: "PointsBet",
   betrivers: "BetRivers",
+  pinnacle: "Pinnacle",
 };
 
 function parseAmericanOdds(value: string | undefined): number | null {
@@ -54,6 +60,14 @@ function americanToImpliedProbability(odds: number): number {
 function americanToDecimalOdds(odds: number): number {
   if (odds > 0) return 1 + odds / 100;
   return 1 + 100 / Math.abs(odds);
+}
+
+function probabilityToAmericanOdds(probability: number): number | null {
+  if (probability <= 0 || probability >= 1) return null;
+  if (probability >= 0.5) {
+    return Math.round((-100 * probability) / (1 - probability));
+  }
+  return Math.round((100 * (1 - probability)) / probability);
 }
 
 function calculateEVPercent(bookOdds: number, fairOdds: number): number {
@@ -80,7 +94,34 @@ function formatDate(iso?: string): { date: string; time: string } {
   };
 }
 
-function mapApiEventToUIEvent(apiEvent: ApiEvent): Event {
+function getPinnacleDevigFairOdds(
+  odd: NonNullable<ApiEvent["odds"]>[string],
+  oddsById: Record<string, NonNullable<ApiEvent["odds"]>[string]>,
+): number | null {
+  const oddID = odd.oddID;
+  const opposingOddID = odd.opposingOddID;
+  if (!oddID || !opposingOddID) return null;
+
+  const thisPinnacleOdds = parseAmericanOdds(odd.byBookmaker?.pinnacle?.odds);
+  if (thisPinnacleOdds === null) return null;
+
+  const opposingOdd = oddsById[opposingOddID];
+  if (!opposingOdd) return null;
+  const opposingPinnacleOdds = parseAmericanOdds(
+    opposingOdd.byBookmaker?.pinnacle?.odds,
+  );
+  if (opposingPinnacleOdds === null) return null;
+
+  const thisImplied = americanToImpliedProbability(thisPinnacleOdds);
+  const opposingImplied = americanToImpliedProbability(opposingPinnacleOdds);
+  const total = thisImplied + opposingImplied;
+  if (total <= 0) return null;
+
+  const devigProbability = thisImplied / total;
+  return probabilityToAmericanOdds(devigProbability);
+}
+
+function mapApiEventToUIEvent(apiEvent: ApiEvent, pinnyMode: boolean): Event {
   const startsAt = apiEvent.status?.startsAt;
   const { date, time } = formatDate(startsAt);
 
@@ -96,10 +137,15 @@ function mapApiEventToUIEvent(apiEvent: ApiEvent): Event {
     "Away";
 
   const bets: Bet[] = [];
-  const oddsEntries = Object.values(apiEvent.odds ?? {});
+  const oddsById = apiEvent.odds ?? {};
+  const oddsEntries = Object.values(oddsById);
 
   for (const odd of oddsEntries) {
-    const fairOdds = parseAmericanOdds(odd.fairOdds);
+    const defaultFairOdds = parseAmericanOdds(odd.fairOdds);
+    const pinnyFairOdds = pinnyMode
+      ? getPinnacleDevigFairOdds(odd, oddsById)
+      : null;
+    const fairOdds = pinnyFairOdds ?? defaultFairOdds;
     if (fairOdds === null) continue;
 
     const byBookmaker = odd.byBookmaker ?? {};
@@ -136,15 +182,37 @@ function mapApiEventToUIEvent(apiEvent: ApiEvent): Event {
 }
 
 export async function fetchEvents(
+  sportsbooks: string[],
   leagues: string[],
+  pinnyMode: boolean,
   signal?: AbortSignal,
 ): Promise<Event[]> {
+  const nowIso = new Date().toISOString();
   const params = new URLSearchParams();
   params.set("oddsAvailable", "true");
-  params.set("includeAltLines", "false");
+  params.set("finalized", "false");
+  params.set("live", "false");
+  params.set("startsAfter", nowIso);
   params.set("limit", "1");
   if (leagues.length > 0) {
     params.set("leagueID", leagues.join(","));
+  }
+  const requestSportsbooks = [...sportsbooks];
+  if (pinnyMode && !requestSportsbooks.includes("Pinnacle")) {
+    requestSportsbooks.push("Pinnacle");
+  }
+  if (requestSportsbooks.length > 0) {
+    params.set(
+      "bookmakerID",
+      requestSportsbooks
+        .map(
+          (s) =>
+            Object.entries(BOOKMAKER_LABELS)
+              .find(([_key, val]) => val === s)?.[0]
+              ?.toLowerCase() ?? s.toLowerCase(),
+        )
+        .join(","),
+    );
   }
 
   const response = await fetch(
@@ -159,5 +227,10 @@ export async function fetchEvents(
   }
 
   const json = (await response.json()) as ApiEventsResponse;
-  return (json.data ?? []).map(mapApiEventToUIEvent);
+  return (json.data ?? [])
+    .filter((event) => {
+      const startsAt = event.status?.startsAt;
+      return startsAt ? new Date(startsAt).getTime() > Date.now() : true;
+    })
+    .map((event) => mapApiEventToUIEvent(event, pinnyMode));
 }

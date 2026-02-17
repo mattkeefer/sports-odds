@@ -21,11 +21,16 @@ const SPORTSBOOKS = [
   "DraftKings",
   "FanDuel",
   "BetMGM",
+  "Fanatics",
+  "ESPN Bet",
+  "theScore Bet",
+  "Fliff",
   "Caesars",
   "PointsBet",
   "BetRivers",
+  "Pinnacle",
 ];
-const LEAGUES = ["NFL", "NBA", "MLB", "NHL", "NCAA FB", "NCAA BB"];
+const LEAGUES = ["NFL", "NBA", "MLB", "NHL", "NCAAF", "NCAAB"];
 
 export function FilterPanel({
   darkMode,
