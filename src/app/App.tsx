@@ -1,14 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
 import { FilterPanel } from "./components/FilterPanel";
 import { EventCard, Event } from "./components/EventCard";
-import { Bet } from "./components/BetCard";
+import { Bet, BookListing } from "./components/BetCard";
 import { TrendingUp, Moon, Sun, RefreshCw, AlertTriangle } from "lucide-react";
 import { fetchEvents } from "./eventsApiClient";
 
-function calculateRecommendedBet(bet: Bet, bankroll: number): Bet {
+function calculateRecommendedBet(
+  listing: BookListing,
+  bankroll: number,
+): BookListing {
   const kellyFraction = 0.25;
-  const recommendedBet = (bet.ev / 100) * bankroll * kellyFraction;
-  return { ...bet, recommendedBet: Math.max(0, recommendedBet) };
+  const recommendedBet = (listing.ev / 100) * bankroll * kellyFraction;
+  return { ...listing, recommendedBet: Math.max(0, recommendedBet) };
 }
 
 export default function App() {
@@ -81,10 +84,19 @@ export default function App() {
       .map((event) => {
         const filteredBets = event.bets
           .filter((bet) => !hiddenBets.has(bet.id))
-          .filter((bet) => selectedSportsbooks.includes(bet.sportsbook))
-          .filter((bet) => bet.odds >= oddsRange[0] && bet.odds <= oddsRange[1])
-          .filter((bet) => bet.ev >= minEV)
-          .map((bet) => calculateRecommendedBet(bet, bankroll));
+          .map((bet) => {
+            if (!bet.listings) return { ...bet, listings: [] };
+            const filteredListings = bet.listings
+              .filter((bet) => selectedSportsbooks.includes(bet.sportsbook))
+              .filter(
+                (bet) => bet.odds >= oddsRange[0] && bet.odds <= oddsRange[1],
+              )
+              .filter((bet) => bet.ev >= minEV)
+              .map((bet) => calculateRecommendedBet(bet, bankroll));
+
+            return { ...bet, listings: filteredListings };
+          })
+          .filter((bet) => bet.listings.length > 0);
 
         return { ...event, bets: filteredBets };
       })
@@ -111,8 +123,12 @@ export default function App() {
     setHiddenBets((prev) => new Set(prev).add(betId));
   };
 
-  const handlePlaceBet = (betId: string) => {
-    alert(`Bet ${betId} placed successfully!`);
+  const handlePlaceBet = (
+    betId: string,
+    sportsbook: string,
+    amount: number,
+  ) => {
+    alert(`Bet ${betId} placed successfully at ${sportsbook} for $${amount}!`);
   };
 
   const handleRefresh = () => {
@@ -124,12 +140,26 @@ export default function App() {
     (sum, event) => sum + event.bets.length,
     0,
   );
-  const totalEV = filteredEvents.reduce(
+  const totalListings = filteredEvents.reduce(
     (sum, event) =>
-      sum + event.bets.reduce((betSum, bet) => betSum + bet.ev, 0),
+      sum + event.bets.reduce((betSum, bet) => betSum + bet.listings.length, 0),
     0,
   );
-  const avgEV = totalBets > 0 ? totalEV / totalBets : 0;
+  const totalEV = filteredEvents.reduce(
+    (sum, event) =>
+      sum +
+      event.bets.reduce(
+        (betSum, bet) =>
+          betSum +
+          bet.listings.reduce(
+            (listingSum, listing) => listingSum + listing.ev,
+            0,
+          ),
+        0,
+      ),
+    0,
+  );
+  const avgEV = totalListings > 0 ? totalEV / totalListings : 0;
 
   return (
     <div className={`min-h-screen ${darkMode ? "bg-gray-900" : "bg-gray-100"}`}>

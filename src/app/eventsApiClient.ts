@@ -46,6 +46,46 @@ const BOOKMAKER_LABELS: Record<string, string> = {
   pinnacle: "Pinnacle",
 };
 
+interface RawBet {
+  id: string;
+  type: string;
+  selection: string;
+  sportsbook: string;
+  odds: number;
+  fairOdds: number;
+  ev: number;
+  recommendedBet: number;
+}
+
+function groupBetsBySelection(rawBets: RawBet[]): Bet[] {
+  const grouped = new Map<string, Bet>();
+
+  rawBets.forEach((rawBet) => {
+    const key = `${rawBet.type}|${rawBet.selection}`;
+
+    if (!grouped.has(key)) {
+      grouped.set(key, {
+        id: key,
+        type: rawBet.type,
+        selection: rawBet.selection,
+        listings: [],
+      });
+    }
+
+    const bet = grouped.get(key)!;
+    bet.listings.push({
+      id: rawBet.id,
+      sportsbook: rawBet.sportsbook,
+      odds: rawBet.odds,
+      fairOdds: rawBet.fairOdds,
+      ev: rawBet.ev,
+      recommendedBet: rawBet.recommendedBet,
+    });
+  });
+
+  return Array.from(grouped.values());
+}
+
 function parseAmericanOdds(value: string | undefined): number | null {
   if (!value) return null;
   const parsed = Number(value);
@@ -136,7 +176,7 @@ function mapApiEventToUIEvent(apiEvent: ApiEvent, pinnyMode: boolean): Event {
     apiEvent.teams?.away?.names?.short ??
     "Away";
 
-  const bets: Bet[] = [];
+  const rawBets: RawBet[] = [];
   const oddsById = apiEvent.odds ?? {};
   const oddsEntries = Object.values(oddsById);
 
@@ -157,7 +197,7 @@ function mapApiEventToUIEvent(apiEvent: ApiEvent, pinnyMode: boolean): Event {
       if (bookOdds === null) continue;
 
       const ev = calculateEVPercent(bookOdds, fairOdds);
-      bets.push({
+      rawBets.push({
         id: `${apiEvent.eventID}:${odd.oddID ?? odd.sideID ?? "odd"}:${bookmakerID}`,
         type: odd.marketName ?? "Market",
         selection: odd.sideID ?? odd.oddID ?? "Selection",
@@ -169,6 +209,8 @@ function mapApiEventToUIEvent(apiEvent: ApiEvent, pinnyMode: boolean): Event {
       });
     }
   }
+
+  const bets = groupBetsBySelection(rawBets);
 
   return {
     id: apiEvent.eventID,
