@@ -15,7 +15,7 @@ function calculateRecommendedBet(
 }
 
 export default function App() {
-  const [darkMode, setDarkMode] = useState(false);
+  const [darkMode, setDarkMode] = useState(true);
   const [pinnyMode, setPinnyMode] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [bankroll, setBankroll] = useState(1000);
@@ -24,8 +24,11 @@ export default function App() {
     "FanDuel",
     "BetMGM",
     "Caesars",
-    "PointsBet",
-    "BetRivers",
+    "Fanatics",
+    "theScore Bet",
+    "ESPN Bet",
+    "Fliff",
+    "Pinnacle",
   ]);
   const [oddsRange, setOddsRange] = useState<[number, number]>([-500, 500]);
   const [minEV, setMinEV] = useState(3.0);

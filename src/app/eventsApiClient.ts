@@ -41,8 +41,6 @@ const BOOKMAKER_LABELS: Record<string, string> = {
   espnbet: "ESPN Bet",
   thescorebet: "theScore Bet",
   fliff: "Fliff",
-  pointsbet: "PointsBet",
-  betrivers: "BetRivers",
   pinnacle: "Pinnacle",
 };
 

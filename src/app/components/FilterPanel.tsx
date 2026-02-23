@@ -26,8 +26,6 @@ const SPORTSBOOKS = [
   "theScore Bet",
   "Fliff",
   "Caesars",
-  "PointsBet",
-  "BetRivers",
   "Pinnacle",
 ];
 const LEAGUES = ["NFL", "NBA", "MLB", "NHL", "NCAAF", "NCAAB"];

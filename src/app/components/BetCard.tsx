@@ -41,9 +41,12 @@ function getSportsbookColor(sportsbook: string): string {
     DraftKings: "bg-green-600 text-white",
     FanDuel: "bg-blue-600 text-white",
     BetMGM: "bg-yellow-500 text-gray-900",
-    Caesars: "bg-purple-700 text-white",
-    PointsBet: "bg-red-600 text-white",
-    BetRivers: "bg-cyan-600 text-white",
+    "theScore Bet": "bg-blue-800 text-white",
+    "ESPN Bet": "bg-cyan-600 text-white",
+    Fliff: "bg-purple-700 text-white",
+    Fanatics: "bg-red-800 text-white",
+    Caesars: "bg-green-800 text-white",
+    Pinnacle: "bg-orange-500 text-gray-900",
   };
   return colors[sportsbook] || "bg-gray-600 text-white";
 }
@@ -180,8 +183,8 @@ export function BetCard({ bet, darkMode, onHide, onPlace }: BetCardProps) {
                 }
                 className={`w-full py-1 text-xs font-medium text-white rounded transition-colors ${
                   darkMode
-                    ? "bg-green-700 hover:bg-green-600"
-                    : "bg-green-600 hover:bg-green-700"
+                    ? "bg-blue-600 hover:bg-blue-500"
+                    : "bg-blue-600 hover:bg-blue-700"
                 }`}
               >
                 Place Bet
