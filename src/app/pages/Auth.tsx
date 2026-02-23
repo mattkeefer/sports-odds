@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { TrendingUp } from "lucide-react";
+import { TrendingUp, ArrowRight } from "lucide-react";
 import { Tier } from "./Subscription";
 
 interface AuthPageProps {
@@ -69,6 +69,7 @@ const US_STATES = [
 ];
 
 export function AuthPage({ onLogin }: AuthPageProps) {
+  const [isSignUp, setIsSignUp] = useState(true);
   const [formData, setFormData] = useState({
     phoneNumber: "",
     firstName: "",
@@ -77,10 +78,13 @@ export function AuthPage({ onLogin }: AuthPageProps) {
     state: "",
     subscriptionTier: "free" as Tier,
   });
+  const [loginData, setLoginData] = useState({
+    identifier: "", // Can be username or phone
+  });
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
-  const validateForm = () => {
+  const validateSignUpForm = () => {
     const newErrors: { [key: string]: string } = {};
 
     // Phone number validation (basic US format)
@@ -125,11 +129,39 @@ export function AuthPage({ onLogin }: AuthPageProps) {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const validateLoginForm = () => {
+    const newErrors: { [key: string]: string } = {};
+
+    if (!loginData.identifier.trim()) {
+      newErrors.identifier = "Username or phone number is required";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSignUpSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (validateForm()) {
+    if (validateSignUpForm()) {
       onLogin(formData);
+    }
+  };
+
+  const handleLoginSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (validateLoginForm()) {
+      // In a real app, this would authenticate the user
+      // For now, we'll create a mock user object
+      onLogin({
+        phoneNumber: loginData.identifier,
+        firstName: "Demo",
+        lastName: "User",
+        username: loginData.identifier,
+        state: "NY",
+        subscriptionTier: "free",
+      });
     }
   };
 
@@ -139,6 +171,19 @@ export function AuthPage({ onLogin }: AuthPageProps) {
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: "" }));
     }
+  };
+
+  const handleLoginChange = (value: string) => {
+    setLoginData({ identifier: value });
+    if (errors.identifier) {
+      setErrors((prev) => ({ ...prev, identifier: "" }));
+    }
+  };
+
+  const switchMode = () => {
+    setIsSignUp(!isSignUp);
+    setErrors({});
+    setAgreedToTerms(false);
   };
 
   return (
@@ -151,196 +196,245 @@ export function AuthPage({ onLogin }: AuthPageProps) {
             <h1 className="text-4xl font-bold text-gray-900">Summit Sports</h1>
           </div>
           <p className="text-gray-600">
-            Sign up to start finding profitable bets
+            {isSignUp
+              ? "Sign up to start finding profitable bets"
+              : "Welcome back! Log in to continue"}
           </p>
         </div>
 
         {/* Form Card */}
         <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-200">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">
-            Create Your Account
+            {isSignUp ? "Create Your Account" : "Log In"}
           </h2>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Phone Number */}
-            <div>
-              <label
-                htmlFor="phoneNumber"
-                className="block text-sm font-medium text-gray-700 mb-1.5"
-              >
-                Phone Number
-              </label>
-              <input
-                type="tel"
-                id="phoneNumber"
-                value={formData.phoneNumber}
-                onChange={(e) => handleChange("phoneNumber", e.target.value)}
-                placeholder="(555) 123-4567"
-                className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all ${
-                  errors.phoneNumber ? "border-red-500" : "border-gray-300"
-                }`}
-              />
-              {errors.phoneNumber && (
-                <p className="mt-1 text-sm text-red-600">
-                  {errors.phoneNumber}
-                </p>
-              )}
-            </div>
-
-            {/* First and Last Name */}
-            <div className="grid grid-cols-2 gap-4">
+          {isSignUp ? (
+            // SIGN UP FORM
+            <form onSubmit={handleSignUpSubmit} className="space-y-5">
+              {/* Phone Number */}
               <div>
                 <label
-                  htmlFor="firstName"
+                  htmlFor="phoneNumber"
                   className="block text-sm font-medium text-gray-700 mb-1.5"
                 >
-                  First Name
+                  Phone Number
                 </label>
                 <input
-                  type="text"
-                  id="firstName"
-                  value={formData.firstName}
-                  onChange={(e) => handleChange("firstName", e.target.value)}
-                  placeholder="John"
+                  type="tel"
+                  id="phoneNumber"
+                  value={formData.phoneNumber}
+                  onChange={(e) => handleChange("phoneNumber", e.target.value)}
+                  placeholder="(555) 123-4567"
                   className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all ${
-                    errors.firstName ? "border-red-500" : "border-gray-300"
+                    errors.phoneNumber ? "border-red-500" : "border-gray-300"
                   }`}
                 />
-                {errors.firstName && (
+                {errors.phoneNumber && (
                   <p className="mt-1 text-sm text-red-600">
-                    {errors.firstName}
+                    {errors.phoneNumber}
                   </p>
                 )}
               </div>
 
+              {/* First and Last Name */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label
+                    htmlFor="firstName"
+                    className="block text-sm font-medium text-gray-700 mb-1.5"
+                  >
+                    First Name
+                  </label>
+                  <input
+                    type="text"
+                    id="firstName"
+                    value={formData.firstName}
+                    onChange={(e) => handleChange("firstName", e.target.value)}
+                    placeholder="John"
+                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all ${
+                      errors.firstName ? "border-red-500" : "border-gray-300"
+                    }`}
+                  />
+                  {errors.firstName && (
+                    <p className="mt-1 text-sm text-red-600">
+                      {errors.firstName}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="lastName"
+                    className="block text-sm font-medium text-gray-700 mb-1.5"
+                  >
+                    Last Name
+                  </label>
+                  <input
+                    type="text"
+                    id="lastName"
+                    value={formData.lastName}
+                    onChange={(e) => handleChange("lastName", e.target.value)}
+                    placeholder="Doe"
+                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all ${
+                      errors.lastName ? "border-red-500" : "border-gray-300"
+                    }`}
+                  />
+                  {errors.lastName && (
+                    <p className="mt-1 text-sm text-red-600">
+                      {errors.lastName}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Username */}
               <div>
                 <label
-                  htmlFor="lastName"
+                  htmlFor="username"
                   className="block text-sm font-medium text-gray-700 mb-1.5"
                 >
-                  Last Name
+                  Username
                 </label>
                 <input
                   type="text"
-                  id="lastName"
-                  value={formData.lastName}
-                  onChange={(e) => handleChange("lastName", e.target.value)}
-                  placeholder="Doe"
+                  id="username"
+                  value={formData.username}
+                  onChange={(e) => handleChange("username", e.target.value)}
+                  placeholder="johndoe123"
                   className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all ${
-                    errors.lastName ? "border-red-500" : "border-gray-300"
+                    errors.username ? "border-red-500" : "border-gray-300"
                   }`}
                 />
-                {errors.lastName && (
-                  <p className="mt-1 text-sm text-red-600">{errors.lastName}</p>
+                {errors.username && (
+                  <p className="mt-1 text-sm text-red-600">{errors.username}</p>
                 )}
               </div>
-            </div>
 
-            {/* Username */}
-            <div>
-              <label
-                htmlFor="username"
-                className="block text-sm font-medium text-gray-700 mb-1.5"
-              >
-                Username
-              </label>
-              <input
-                type="text"
-                id="username"
-                value={formData.username}
-                onChange={(e) => handleChange("username", e.target.value)}
-                placeholder="johndoe123"
-                className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all ${
-                  errors.username ? "border-red-500" : "border-gray-300"
-                }`}
-              />
-              {errors.username && (
-                <p className="mt-1 text-sm text-red-600">{errors.username}</p>
-              )}
-            </div>
+              {/* State */}
+              <div>
+                <label
+                  htmlFor="state"
+                  className="block text-sm font-medium text-gray-700 mb-1.5"
+                >
+                  State
+                </label>
+                <select
+                  id="state"
+                  value={formData.state}
+                  onChange={(e) => handleChange("state", e.target.value)}
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all bg-white ${
+                    errors.state ? "border-red-500" : "border-gray-300"
+                  }`}
+                >
+                  <option value="">Select your state</option>
+                  {US_STATES.map((state) => (
+                    <option key={state} value={state}>
+                      {state}
+                    </option>
+                  ))}
+                </select>
+                {errors.state && (
+                  <p className="mt-1 text-sm text-red-600">{errors.state}</p>
+                )}
+              </div>
 
-            {/* State */}
-            <div>
-              <label
-                htmlFor="state"
-                className="block text-sm font-medium text-gray-700 mb-1.5"
-              >
-                State
-              </label>
-              <select
-                id="state"
-                value={formData.state}
-                onChange={(e) => handleChange("state", e.target.value)}
-                className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all bg-white ${
-                  errors.state ? "border-red-500" : "border-gray-300"
-                }`}
-              >
-                <option value="">Select your state</option>
-                {US_STATES.map((state) => (
-                  <option key={state} value={state}>
-                    {state}
-                  </option>
-                ))}
-              </select>
-              {errors.state && (
-                <p className="mt-1 text-sm text-red-600">{errors.state}</p>
-              )}
-            </div>
+              {/* Terms of Service */}
+              <div>
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={agreedToTerms}
+                    onChange={(e) => {
+                      setAgreedToTerms(e.target.checked);
+                      if (errors.terms) {
+                        setErrors((prev) => ({ ...prev, terms: "" }));
+                      }
+                    }}
+                    className={`mt-1 w-4 h-4 border-2 rounded focus:ring-2 focus:ring-blue-500 ${
+                      errors.terms ? "border-red-500" : "border-gray-300"
+                    }`}
+                  />
+                  <span className="text-sm text-gray-700">
+                    I agree to the{" "}
+                    <a
+                      href="#"
+                      className="text-blue-600 hover:text-blue-700 font-medium"
+                    >
+                      Terms of Service
+                    </a>{" "}
+                    and{" "}
+                    <a
+                      href="#"
+                      className="text-blue-600 hover:text-blue-700 font-medium"
+                    >
+                      Privacy Policy
+                    </a>
+                  </span>
+                </label>
+                {errors.terms && (
+                  <p className="mt-1 text-sm text-red-600">{errors.terms}</p>
+                )}
+              </div>
 
-            {/* Terms of Service */}
-            <div>
-              <label className="flex items-start gap-3 cursor-pointer">
+              {/* Submit Button */}
+              <button
+                type="submit"
+                className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 active:bg-blue-800 transition-colors shadow-md hover:shadow-lg flex items-center justify-center gap-2"
+              >
+                Create Account
+                <ArrowRight className="w-5 h-5" />
+              </button>
+            </form>
+          ) : (
+            // LOGIN FORM
+            <form onSubmit={handleLoginSubmit} className="space-y-5">
+              <div>
+                <label
+                  htmlFor="identifier"
+                  className="block text-sm font-medium text-gray-700 mb-1.5"
+                >
+                  Username or Phone Number
+                </label>
                 <input
-                  type="checkbox"
-                  checked={agreedToTerms}
-                  onChange={(e) => {
-                    setAgreedToTerms(e.target.checked);
-                    if (errors.terms) {
-                      setErrors((prev) => ({ ...prev, terms: "" }));
-                    }
-                  }}
-                  className={`mt-1 w-4 h-4 border-2 rounded focus:ring-2 focus:ring-blue-500 ${
-                    errors.terms ? "border-red-500" : "border-gray-300"
+                  type="text"
+                  id="identifier"
+                  value={loginData.identifier}
+                  onChange={(e) => handleLoginChange(e.target.value)}
+                  placeholder="johndoe123 or (555) 123-4567"
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all ${
+                    errors.identifier ? "border-red-500" : "border-gray-300"
                   }`}
                 />
-                <span className="text-sm text-gray-700">
-                  I agree to the{" "}
-                  <a
-                    href="#"
-                    className="text-blue-600 hover:text-blue-700 font-medium"
-                  >
-                    Terms of Service
-                  </a>{" "}
-                  and{" "}
-                  <a
-                    href="#"
-                    className="text-blue-600 hover:text-blue-700 font-medium"
-                  >
-                    Privacy Policy
-                  </a>
-                </span>
-              </label>
-              {errors.terms && (
-                <p className="mt-1 text-sm text-red-600">{errors.terms}</p>
-              )}
-            </div>
+                {errors.identifier && (
+                  <p className="mt-1 text-sm text-red-600">
+                    {errors.identifier}
+                  </p>
+                )}
+              </div>
 
-            {/* Submit Button */}
-            <button
-              type="submit"
-              className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 active:bg-blue-800 transition-colors shadow-md hover:shadow-lg"
-            >
-              Get Started
-            </button>
-          </form>
+              {/* Submit Button */}
+              <button
+                type="submit"
+                className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 active:bg-blue-800 transition-colors shadow-md hover:shadow-lg flex items-center justify-center gap-2"
+              >
+                Log In
+                <ArrowRight className="w-5 h-5" />
+              </button>
+            </form>
+          )}
 
-          {/* Footer */}
-          <p className="mt-6 text-center text-sm text-gray-600">
-            Already have an account?{" "}
-            <button className="text-blue-600 hover:text-blue-700 font-medium">
-              Sign In
-            </button>
-          </p>
+          {/* Toggle Between Sign Up and Login */}
+          <div className="mt-6 pt-6 border-t border-gray-200">
+            <p className="text-center text-sm text-gray-600">
+              {isSignUp ? "Already have an account?" : "Don't have an account?"}{" "}
+              <button
+                onClick={switchMode}
+                className="text-blue-600 hover:text-blue-700 font-semibold"
+              >
+                {isSignUp ? "Log In" : "Sign Up"}
+              </button>
+            </p>
+          </div>
         </div>
 
         {/* Legal Notice */}
