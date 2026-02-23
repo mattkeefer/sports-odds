@@ -6,6 +6,7 @@ interface RootContextType {
   darkMode: boolean;
   setDarkMode: (value: boolean) => void;
   user: UserData | null;
+  setUser: (user: UserData | null) => void;
 }
 
 export function Root() {
@@ -20,7 +21,9 @@ export function Root() {
   // Otherwise show the app
   return (
     <Outlet
-      context={{ darkMode, setDarkMode, user } satisfies RootContextType}
+      context={
+        { darkMode, setDarkMode, user, setUser } satisfies RootContextType
+      }
     />
   );
 }

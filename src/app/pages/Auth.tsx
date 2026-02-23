@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { TrendingUp } from "lucide-react";
+import { Tier } from "./Subscription";
 
 interface AuthPageProps {
   onLogin: (userData: UserData) => void;
@@ -11,6 +12,7 @@ export interface UserData {
   lastName: string;
   username: string;
   state: string;
+  subscriptionTier: Tier;
 }
 
 const US_STATES = [
@@ -73,6 +75,7 @@ export function AuthPage({ onLogin }: AuthPageProps) {
     lastName: "",
     username: "",
     state: "",
+    subscriptionTier: "free" as Tier,
   });
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
