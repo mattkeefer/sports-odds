@@ -186,7 +186,7 @@ export function DashboardPage() {
               <h1
                 className={`text-4xl font-bold ${darkMode ? "text-white" : "text-gray-900"}`}
               >
-                Summit Sports
+                Summit - Odds Dashboard
               </h1>
             </div>
 
