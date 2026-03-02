@@ -1,3 +1,38 @@
-@import './fonts.css';
-@import './tailwind.css';
-@import './theme.css';
+@import "./fonts.css";
+@import "./tailwind.css";
+@import "./theme.css";
+
+/* Dark mode calendar styles */
+.dark-calendar {
+  --rdp-background-color: #1f2937;
+  --rdp-accent-color: #3b82f6;
+  color: #d1d5db;
+}
+
+.dark-calendar .rdp-day_button:hover:not([disabled]) {
+  background-color: #374151;
+}
+
+.dark-calendar .rdp-day_button {
+  color: #d1d5db;
+}
+
+.dark-calendar .rdp-day_button[disabled] {
+  color: #6b7280;
+}
+
+.dark-calendar .rdp-month_caption {
+  color: #f9fafb;
+}
+
+.dark-calendar .rdp-nav button {
+  color: #d1d5db;
+}
+
+.dark-calendar .rdp-nav button:hover {
+  background-color: #374151;
+}
+
+.dark-calendar .rdp-weekday {
+  color: #9ca3af;
+}

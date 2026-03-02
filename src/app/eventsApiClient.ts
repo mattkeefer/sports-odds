@@ -1,5 +1,5 @@
 import { Event } from "./components/EventCard";
-import { Bet } from "./components/BetCard";
+import { Bet } from "./models/models";
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ?? "http://localhost:4000";
@@ -32,7 +32,7 @@ type ApiEventsResponse = {
   notice?: string;
 };
 
-const BOOKMAKER_LABELS: Record<string, string> = {
+export const SPORTSBOOK_LABELS: Record<string, string> = {
   draftkings: "DraftKings",
   fanduel: "FanDuel",
   betmgm: "BetMGM",
@@ -108,13 +108,13 @@ function probabilityToAmericanOdds(probability: number): number | null {
   return Math.round((100 * (1 - probability)) / probability);
 }
 
-function calculateEVPercent(bookOdds: number, fairOdds: number): number {
+export function calculateEVPercent(bookOdds: number, fairOdds: number): number {
   const fairProbability = americanToImpliedProbability(fairOdds);
   const bookDecimal = americanToDecimalOdds(bookOdds);
   return (fairProbability * bookDecimal - 1) * 100;
 }
 
-function formatDate(iso?: string): { date: string; time: string } {
+export function formatDate(iso?: string): { date: string; time: string } {
   if (!iso) return { date: "Unknown", time: "Unknown" };
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return { date: "Unknown", time: "Unknown" };
@@ -188,7 +188,7 @@ function mapApiEventToUIEvent(apiEvent: ApiEvent, pinnyMode: boolean): Event {
 
     const byBookmaker = odd.byBookmaker ?? {};
     for (const [bookmakerID, line] of Object.entries(byBookmaker)) {
-      const sportsbook = BOOKMAKER_LABELS[bookmakerID.toLowerCase()];
+      const sportsbook = SPORTSBOOK_LABELS[bookmakerID.toLowerCase()];
       if (!sportsbook) continue;
 
       const bookOdds = parseAmericanOdds(line.odds);
@@ -247,7 +247,7 @@ export async function fetchEvents(
       requestSportsbooks
         .map(
           (s) =>
-            Object.entries(BOOKMAKER_LABELS)
+            Object.entries(SPORTSBOOK_LABELS)
               .find(([_key, val]) => val === s)?.[0]
               ?.toLowerCase() ?? s.toLowerCase(),
         )

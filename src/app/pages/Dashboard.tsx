@@ -2,7 +2,11 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import { FilterPanel } from "../components/FilterPanel";
 import { EventCard, Event } from "../components/EventCard";
-import { BookListing } from "../components/BetCard";
+import {
+  BookListing,
+  getListOfLeagues,
+  getListOfSportsbooks,
+} from "../models/models";
 import {
   TrendingUp,
   Moon,
@@ -10,6 +14,7 @@ import {
   RefreshCw,
   AlertTriangle,
   Crown,
+  ClipboardList,
 } from "lucide-react";
 import { fetchEvents } from "../eventsApiClient";
 import { useDarkMode } from "../Root";
@@ -29,27 +34,13 @@ export function DashboardPage() {
   const [pinnyMode, setPinnyMode] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [bankroll, setBankroll] = useState(1000);
-  const [selectedSportsbooks, setSelectedSportsbooks] = useState<string[]>([
-    "DraftKings",
-    "FanDuel",
-    "BetMGM",
-    "Caesars",
-    "Fanatics",
-    "theScore Bet",
-    "ESPN Bet",
-    "Fliff",
-    "Pinnacle",
-  ]);
+  const [selectedSportsbooks, setSelectedSportsbooks] = useState<string[]>(
+    getListOfSportsbooks(),
+  );
   const [oddsRange, setOddsRange] = useState<[number, number]>([-500, 500]);
   const [minEV, setMinEV] = useState(3.0);
-  const [selectedLeagues, setSelectedLeagues] = useState<string[]>([
-    "NFL",
-    "NBA",
-    "MLB",
-    "NHL",
-    "NCAAF",
-    "NCAAB",
-  ]);
+  const [selectedLeagues, setSelectedLeagues] =
+    useState<string[]>(getListOfLeagues());
   const [dateRange, setDateRange] = useState<[string, string]>([
     "2026-02-16",
     "2026-02-28",
@@ -100,12 +91,17 @@ export function DashboardPage() {
           .map((bet) => {
             if (!bet.listings) return { ...bet, listings: [] };
             const filteredListings = bet.listings
-              .filter((bet) => selectedSportsbooks.includes(bet.sportsbook))
-              .filter(
-                (bet) => bet.odds >= oddsRange[0] && bet.odds <= oddsRange[1],
+              .filter((bet: BookListing) =>
+                selectedSportsbooks.includes(bet.sportsbook),
               )
-              .filter((bet) => bet.ev >= minEV)
-              .map((bet) => calculateRecommendedBet(bet, bankroll));
+              .filter(
+                (bet: BookListing) =>
+                  bet.odds >= oddsRange[0] && bet.odds <= oddsRange[1],
+              )
+              .filter((bet: BookListing) => bet.ev >= minEV)
+              .map((bet: BookListing) =>
+                calculateRecommendedBet(bet, bankroll),
+              );
 
             return { ...bet, listings: filteredListings };
           })
@@ -165,7 +161,8 @@ export function DashboardPage() {
         (betSum, bet) =>
           betSum +
           bet.listings.reduce(
-            (listingSum, listing) => listingSum + listing.ev,
+            (listingSum: number, listing: BookListing) =>
+              listingSum + listing.ev,
             0,
           ),
         0,
@@ -219,6 +216,18 @@ export function DashboardPage() {
                 title="Refresh data"
               >
                 <RefreshCw className="w-5 h-5" />
+              </button>
+
+              <button
+                onClick={() => navigate("/tracking")}
+                className={`p-2 rounded-lg transition-colors ${
+                  darkMode
+                    ? "bg-gray-800 text-green-400 hover:bg-gray-700"
+                    : "bg-white text-green-600 hover:bg-gray-100 border border-gray-300"
+                }`}
+                title="View bet tracking"
+              >
+                <ClipboardList className="w-5 h-5" />
               </button>
 
               <button
