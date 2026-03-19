@@ -1,27 +1,26 @@
 import "dotenv/config";
-import { createServer } from "node:http";
-import { URL } from "node:url";
+import express from "express";
+import cors from "cors";
 import { getEvents } from "./sportsGameOddsClient.js";
 import { EventsQuery } from "./types.js";
+import { initializeApp } from "firebase-admin/app";
+import admin from "firebase-admin";
+import * as serviceAccount from "../../sports-odds-4fe36-firebase-adminsdk-fbsvc-aaeac952be.json" with { type: "json" };
 
 const PORT = Number(process.env.PORT ?? 4000);
-const CORS_HEADERS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET,OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
+const CORS_OPTIONS = {
+  origin: "http://localhost:5173",
+  methods: "*",
+  credentials: true,
 };
 
-function json(
-  res: import("node:http").ServerResponse,
-  statusCode: number,
-  payload: unknown,
-): void {
-  res.writeHead(statusCode, {
-    "Content-Type": "application/json; charset=utf-8",
-    ...CORS_HEADERS,
-  });
-  res.end(JSON.stringify(payload));
-}
+const app = initializeApp({
+  credential: admin.credential.cert({
+    projectId: serviceAccount.default.project_id,
+    privateKey: serviceAccount.default.private_key,
+    clientEmail: serviceAccount.default.client_email,
+  }),
+});
 
 function parseBoolean(value: string | null): boolean | undefined {
   if (value === null) return undefined;
@@ -36,55 +35,39 @@ function parseNumber(value: string | null): number | undefined {
   return Number.isFinite(num) ? num : undefined;
 }
 
-function toEventsQuery(searchParams: URLSearchParams): EventsQuery {
+function toEventsQuery(searchParams: any): EventsQuery {
   return {
-    oddsAvailable: parseBoolean(searchParams.get("oddsAvailable")),
-    finalized: parseBoolean(searchParams.get("finalized")),
-    live: parseBoolean(searchParams.get("live")),
-    leagueID: searchParams.get("leagueID") ?? undefined,
-    oddID: searchParams.get("oddID") ?? undefined,
-    bookmakerID: searchParams.get("bookmakerID") ?? undefined,
-    startsAfter: searchParams.get("startsAfter") ?? undefined,
-    includeAltLines: parseBoolean(searchParams.get("includeAltLines")),
-    cursor: searchParams.get("cursor") ?? undefined,
-    limit: parseNumber(searchParams.get("limit")),
+    oddsAvailable: parseBoolean(searchParams["oddsAvailable"]) ?? true,
+    finalized: parseBoolean(searchParams["finalized"]) ?? false,
+    live: parseBoolean(searchParams["live"]) ?? false,
+    leagueID: searchParams["leagueID"] ?? undefined,
+    oddID: searchParams["oddID"] ?? undefined,
+    bookmakerID: searchParams["bookmakerID"] ?? undefined,
+    startsAfter: searchParams["startsAfter"] ?? undefined,
+    includeAltLines: parseBoolean(searchParams["includeAltLines"]) ?? false,
+    cursor: searchParams["cursor"],
+    limit: parseNumber(searchParams["limit"]) ?? 1,
   };
 }
 
-const server = createServer(async (req, res) => {
-  if (!req.url || !req.method) {
-    json(res, 400, { error: "Invalid request" });
-    return;
+const server = express();
+server.use(cors(CORS_OPTIONS));
+
+server.get("/health", (req, res) => {
+  res.status(200).json({ ok: true });
+});
+
+server.get("/api/events", async (req, res) => {
+  try {
+    const query = toEventsQuery(req.query);
+    const result = await getEvents(query);
+    res.status(200).json(result);
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Unknown backend error";
+    res.status(502).json({ error: message });
+    console.error("Error handling /api/events request:", error);
   }
-
-  const url = new URL(req.url, `http://${req.headers.host ?? "localhost"}`);
-
-  if (req.method === "OPTIONS") {
-    res.writeHead(204, CORS_HEADERS);
-    res.end();
-    return;
-  }
-
-  if (req.method === "GET" && url.pathname === "/health") {
-    json(res, 200, { ok: true });
-    return;
-  }
-
-  if (req.method === "GET" && url.pathname === "/api/events") {
-    try {
-      const query = toEventsQuery(url.searchParams);
-      const result = await getEvents(query);
-      json(res, 200, result);
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Unknown backend error";
-      json(res, 502, { error: message });
-      console.error("Error handling /api/events request:", error);
-    }
-    return;
-  }
-
-  json(res, 404, { error: "Not found" });
 });
 
 server.listen(PORT, () => {

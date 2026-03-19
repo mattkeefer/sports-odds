@@ -13,5 +13,5 @@ export interface PlacedBet {
   placedEV: number;
   status: "pending" | "won" | "lost";
   settledAt?: Date;
-  actualReturn?: number;
+  profit?: number;
 }

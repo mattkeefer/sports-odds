@@ -139,7 +139,8 @@ function getPinnacleDevigFairOdds(
 ): number | null {
   const oddID = odd.oddID;
   const opposingOddID = odd.opposingOddID;
-  if (!oddID || !opposingOddID) return null;
+  if (!oddID || !opposingOddID || !odd.byBookmaker?.pinnacle?.available)
+    return null;
 
   const thisPinnacleOdds = parseAmericanOdds(odd.byBookmaker?.pinnacle?.odds);
   if (thisPinnacleOdds === null) return null;
@@ -190,7 +191,7 @@ function mapApiEventToUIEvent(apiEvent: ApiEvent, pinnyMode: boolean): Event {
     const byBookmaker = odd.byBookmaker ?? {};
     for (const [bookmakerID, line] of Object.entries(byBookmaker)) {
       const sportsbook = SPORTSBOOK_LABELS[bookmakerID.toLowerCase()];
-      if (!sportsbook) continue;
+      if (!sportsbook || !line.available) continue;
 
       const bookOdds = parseAmericanOdds(line.odds);
       if (bookOdds === null) continue;
