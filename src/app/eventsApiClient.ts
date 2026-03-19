@@ -42,6 +42,7 @@ export const SPORTSBOOK_LABELS: Record<string, string> = {
   thescorebet: "theScore Bet",
   fliff: "Fliff",
   pinnacle: "Pinnacle",
+  kalshi: "Kalshi",
 };
 
 interface RawBet {

@@ -1,5 +1,6 @@
 import { Filter, DollarSign } from "lucide-react";
 import { useState } from "react";
+import { SPORTSBOOK_LABELS } from "../eventsApiClient";
 
 interface FilterPanelProps {
   darkMode: boolean;
@@ -17,17 +18,6 @@ interface FilterPanelProps {
   setDateRange: (value: [string, string]) => void;
 }
 
-const SPORTSBOOKS = [
-  "DraftKings",
-  "FanDuel",
-  "BetMGM",
-  "Fanatics",
-  "ESPN Bet",
-  "theScore Bet",
-  "Fliff",
-  "Caesars",
-  "Pinnacle",
-];
 const LEAGUES = ["NFL", "NBA", "MLB", "NHL", "NCAAF", "NCAAB"];
 
 export function FilterPanel({
@@ -130,7 +120,7 @@ export function FilterPanel({
               Sportsbooks
             </label>
             <div className="flex flex-wrap gap-2">
-              {SPORTSBOOKS.map((sportsbook) => (
+              {Object.values(SPORTSBOOK_LABELS).map((sportsbook) => (
                 <button
                   key={sportsbook}
                   onClick={() => toggleSportsbook(sportsbook)}
