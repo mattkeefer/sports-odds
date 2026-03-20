@@ -1,6 +1,8 @@
 import { Calendar, Trophy, ArrowUpDown } from "lucide-react";
-import { BetCard, Bet } from "./BetCard";
+import { BetCard } from "./BetCard";
 import { useState } from "react";
+import { PlacedBet } from "../models/bet";
+import { BookListing, Bet } from "../models/models";
 
 export interface Event {
   id: string;
@@ -16,7 +18,7 @@ interface EventCardProps {
   event: Event;
   darkMode: boolean;
   onHideBet: (betId: string) => void;
-  onPlaceBet: (betId: string, sportsbook: string, amount: number) => void;
+  onPlaceBet: (bet: PlacedBet) => void;
 }
 
 type SortOption = "ev-desc" | "ev-asc" | "odds-asc" | "odds-desc";
@@ -31,9 +33,10 @@ export function EventCard({
 
   const sortedBets = [...event.bets].sort((a, b) => {
     // Get the best listing for comparison
-    const getBestEV = (bet: Bet) => Math.max(...bet.listings.map((l) => l.ev));
+    const getBestEV = (bet: Bet) =>
+      Math.max(...bet.listings.map((l: BookListing) => l.ev));
     const getBestOdds = (bet: Bet) =>
-      Math.max(...bet.listings.map((l) => l.odds));
+      Math.max(...bet.listings.map((l: BookListing) => l.odds));
 
     switch (sortBy) {
       case "ev-desc":
@@ -178,6 +181,7 @@ export function EventCard({
           <BetCard
             key={bet.id}
             bet={bet}
+            event={event}
             darkMode={darkMode}
             onHide={onHideBet}
             onPlace={onPlaceBet}

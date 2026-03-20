@@ -1,4 +1,5 @@
 import { Event } from "./components/EventCard";
+import { PlacedBet } from "./models/bet";
 import { Bet } from "./models/models";
 
 const API_BASE_URL =
@@ -12,12 +13,14 @@ type ApiEvent = {
     away?: { names?: { long?: string; medium?: string; short?: string } };
   };
   status?: { startsAt?: string };
+  links?: { bookmakers?: Record<string, string> };
   odds?: Record<
     string,
     {
       oddID?: string;
       opposingOddID?: string;
       marketName?: string;
+      betTypeID?: string;
       sideID?: string;
       fairOdds?: string;
       byBookmaker?: Record<string, { odds?: string; available?: boolean }>;
@@ -47,6 +50,7 @@ export const SPORTSBOOK_LABELS: Record<string, string> = {
 
 interface RawBet {
   id: string;
+  marketName: string;
   type: string;
   selection: string;
   sportsbook: string;
@@ -60,11 +64,12 @@ function groupBetsBySelection(rawBets: RawBet[]): Bet[] {
   const grouped = new Map<string, Bet>();
 
   rawBets.forEach((rawBet) => {
-    const key = `${rawBet.type}|${rawBet.selection}`;
+    const key = `${rawBet.marketName}|${rawBet.selection}`;
 
     if (!grouped.has(key)) {
       grouped.set(key, {
         id: key,
+        marketName: rawBet.marketName,
         type: rawBet.type,
         selection: rawBet.selection,
         listings: [],
@@ -198,9 +203,10 @@ function mapApiEventToUIEvent(apiEvent: ApiEvent, pinnyMode: boolean): Event {
 
       const ev = calculateEVPercent(bookOdds, fairOdds);
       rawBets.push({
-        id: `${apiEvent.eventID}:${odd.oddID ?? odd.sideID ?? "odd"}:${bookmakerID}`,
-        type: odd.marketName ?? "Market",
-        selection: odd.sideID ?? odd.oddID ?? "Selection",
+        id: `${apiEvent.eventID}:${odd.oddID}`,
+        marketName: odd.marketName ?? "UNKNOWN",
+        type: odd.betTypeID ?? "UNKNOWN",
+        selection: odd.sideID ?? "UNKNOWN",
         sportsbook,
         odds: bookOdds,
         fairOdds,
@@ -275,4 +281,18 @@ export async function fetchEvents(
       return startsAt ? new Date(startsAt).getTime() > Date.now() : true;
     })
     .map((event) => mapApiEventToUIEvent(event, pinnyMode));
+}
+
+export async function saveBet(bet: PlacedBet): Promise<void> {
+  return fetch(`${API_BASE_URL}/api/bets`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(bet),
+  }).then((response) => {
+    if (!response.ok) {
+      throw new Error(`Failed to save bet (status ${response.status}).`);
+    }
+  });
 }

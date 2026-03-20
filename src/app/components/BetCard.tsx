@@ -1,19 +1,29 @@
 import { EyeOff } from "lucide-react";
 import {
   Bet,
+  calculatePotentialWin,
   formatOdds,
   getSportsbookColor,
   oddsToImpliedProb,
 } from "../models/models";
+import { PlacedBet } from "../models/bet";
+import { Event } from "./EventCard";
 
 interface BetCardProps {
   bet: Bet;
+  event: Event;
   darkMode: boolean;
   onHide: (betId: string) => void;
-  onPlace: (listingId: string, sportsbook: string, amount: number) => void;
+  onPlace: (bet: PlacedBet) => void;
 }
 
-export function BetCard({ bet, darkMode, onHide, onPlace }: BetCardProps) {
+export function BetCard({
+  bet,
+  event,
+  darkMode,
+  onHide,
+  onPlace,
+}: BetCardProps) {
   // Sort listings by EV descending
   const sortedListings = [...bet.listings].sort((a, b) => b.ev - a.ev);
 
@@ -28,7 +38,7 @@ export function BetCard({ bet, darkMode, onHide, onPlace }: BetCardProps) {
           <div
             className={`text-sm font-medium mb-1 ${darkMode ? "text-white" : "text-gray-900"}`}
           >
-            {bet.type}: {bet.selection}
+            {bet.marketName}: {bet.selection}
           </div>
         </div>
         <button
@@ -137,11 +147,25 @@ export function BetCard({ bet, darkMode, onHide, onPlace }: BetCardProps) {
 
               <button
                 onClick={() =>
-                  onPlace(
-                    listing.id,
-                    listing.sportsbook,
-                    listing.recommendedBet,
-                  )
+                  onPlace({
+                    id: bet.id,
+                    eventName: event.id,
+                    league: event.league,
+                    marketName: bet.marketName,
+                    betType: bet.type,
+                    selection: bet.selection,
+                    sportsbook: listing.sportsbook,
+                    odds: listing.odds,
+                    amount: listing.recommendedBet,
+                    potentialWin: calculatePotentialWin(
+                      listing.odds,
+                      listing.recommendedBet,
+                    ),
+                    placedAt: new Date(),
+                    eventDate: new Date(event.date),
+                    placedEV: listing.ev,
+                    status: "pending",
+                  })
                 }
                 className={`w-full py-1 text-xs font-medium text-white rounded transition-colors ${
                   darkMode

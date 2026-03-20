@@ -11,6 +11,7 @@ export interface BookListing {
 
 export interface Bet {
   id: string;
+  marketName: string;
   type: string;
   selection: string;
   listings: BookListing[];

@@ -16,8 +16,9 @@ import {
   Crown,
   ClipboardList,
 } from "lucide-react";
-import { fetchEvents } from "../eventsApiClient";
+import { fetchEvents, saveBet } from "../eventsApiClient";
 import { useDarkMode } from "../Root";
+import { PlacedBet } from "../models/bet";
 
 function calculateRecommendedBet(
   listing: BookListing,
@@ -132,12 +133,11 @@ export function DashboardPage() {
     setHiddenBets((prev) => new Set(prev).add(betId));
   };
 
-  const handlePlaceBet = (
-    betId: string,
-    sportsbook: string,
-    amount: number,
-  ) => {
-    alert(`Bet ${betId} placed successfully at ${sportsbook} for $${amount}!`);
+  const handlePlaceBet = (bet: PlacedBet) => {
+    saveBet(bet);
+    alert(
+      `Bet ${bet.id} placed successfully at ${bet.sportsbook} for $${bet.amount}!`,
+    );
   };
 
   const handleRefresh = () => {

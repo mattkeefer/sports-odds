@@ -2,6 +2,7 @@ export interface PlacedBet {
   id: string;
   eventName: string;
   league: string;
+  marketName: string;
   betType: string;
   selection: string;
   sportsbook: string;
