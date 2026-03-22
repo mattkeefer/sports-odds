@@ -29,10 +29,12 @@ function generateMockBets(): PlacedBet[] {
   return [
     {
       id: "placed-1",
+      eventId: "event-1234",
       eventName: "Kansas City Chiefs vs Buffalo Bills",
       league: "NFL",
       betType: "Moneyline",
-      selection: "Buffalo Bills",
+      marketName: "Buffalo Bills Moneyline",
+      selection: "away",
       sportsbook: "DraftKings",
       odds: 185,
       amount: 58.0,
@@ -44,10 +46,12 @@ function generateMockBets(): PlacedBet[] {
     },
     {
       id: "placed-2",
+      eventId: "event-4567",
       eventName: "Los Angeles Lakers vs Boston Celtics",
       league: "NBA",
       betType: "Player Prop",
-      selection: "LeBron James Over 28.5 pts",
+      marketName: "LeBron James Over 28.5 pts",
+      selection: "over",
       sportsbook: "PointsBet",
       odds: 120,
       amount: 42.0,
@@ -56,14 +60,16 @@ function generateMockBets(): PlacedBet[] {
       eventDate: new Date(today.setHours(19, 0, 0)),
       placedEV: 4.2,
       status: "won",
-      actualReturn: 50.4,
+      profit: 50.4,
     },
     {
       id: "placed-3",
+      eventId: "event-7891",
       eventName: "Toronto Maple Leafs vs Montreal Canadiens",
       league: "NHL",
       betType: "Total",
-      selection: "Over 6.5",
+      marketName: "Over 6.5",
+      selection: "over",
       sportsbook: "DraftKings",
       odds: 110,
       amount: 48.0,
@@ -72,14 +78,16 @@ function generateMockBets(): PlacedBet[] {
       eventDate: new Date(today.setHours(22, 0, 0)),
       placedEV: 1.8,
       status: "lost",
-      actualReturn: -48.0,
+      profit: -48.0,
     },
     {
       id: "placed-4",
+      eventId: "event-4561",
       eventName: "Golden State Warriors vs Phoenix Suns",
       league: "NBA",
       betType: "Spread",
-      selection: "Suns +4.5",
+      marketName: "Suns +4.5",
+      selection: "away",
       sportsbook: "BetMGM",
       odds: -108,
       amount: 31.0,
@@ -89,14 +97,16 @@ function generateMockBets(): PlacedBet[] {
       placedEV: 2.5,
       status: "won",
       settledAt: new Date(yesterday.setHours(23, 30, 0)),
-      actualReturn: 28.7,
+      profit: 28.7,
     },
     {
       id: "placed-5",
+      eventId: "event-789",
       eventName: "Duke Blue Devils vs North Carolina Tar Heels",
       league: "NCAA BB",
       betType: "Total",
-      selection: "Under 155.5",
+      marketName: "Under 155.5",
+      selection: "under",
       sportsbook: "FanDuel",
       odds: 105,
       amount: 56.0,
@@ -106,14 +116,16 @@ function generateMockBets(): PlacedBet[] {
       placedEV: 3.0,
       status: "won",
       settledAt: new Date(yesterday.setHours(21, 45, 0)),
-      actualReturn: 58.8,
+      profit: 58.8,
     },
     {
       id: "placed-6",
+      eventId: "event-456",
       eventName: "Miami Heat vs Milwaukee Bucks",
       league: "NBA",
       betType: "Moneyline",
-      selection: "Miami Heat",
+      marketName: "Miami Heat",
+      selection: "home",
       sportsbook: "Caesars",
       odds: 165,
       amount: 40.0,
@@ -123,14 +135,16 @@ function generateMockBets(): PlacedBet[] {
       placedEV: 2.8,
       status: "lost",
       settledAt: new Date(twoDaysAgo.setHours(22, 0, 0)),
-      actualReturn: -40.0,
+      profit: -40.0,
     },
     {
       id: "placed-7",
+      eventId: "event-123",
       eventName: "Dallas Cowboys vs Philadelphia Eagles",
+      marketName: "Cowboys -3.5",
       league: "NFL",
       betType: "Spread",
-      selection: "Cowboys -3.5",
+      selection: "home",
       sportsbook: "FanDuel",
       odds: -110,
       amount: 32.0,
@@ -140,7 +154,7 @@ function generateMockBets(): PlacedBet[] {
       placedEV: 1.5,
       status: "lost",
       settledAt: new Date(twoDaysAgo.setHours(19, 15, 0)),
-      actualReturn: -32.0,
+      profit: -32.0,
     },
   ];
 }
@@ -183,10 +197,7 @@ export function BetTrackingPage() {
     const settledBets = todayBets.filter((bet) => bet.status !== "pending");
 
     const atRisk = openBets.reduce((sum, bet) => sum + bet.amount, 0);
-    const profit = settledBets.reduce(
-      (sum, bet) => sum + (bet.actualReturn || 0),
-      0,
-    );
+    const profit = settledBets.reduce((sum, bet) => sum + (bet.profit || 0), 0);
 
     return {
       openBets: openBets.length,
@@ -222,13 +233,13 @@ export function BetTrackingPage() {
   const handleMarkWon = (bet: PlacedBet) => {
     bet.status = "won";
     bet.settledAt = new Date();
-    bet.actualReturn = bet.potentialWin;
+    bet.profit = bet.potentialWin;
   };
 
   const handleMarkLost = (bet: PlacedBet) => {
     bet.status = "lost";
     bet.settledAt = new Date();
-    bet.actualReturn = -bet.amount;
+    bet.profit = -bet.amount;
   };
 
   return (

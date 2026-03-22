@@ -74,7 +74,6 @@ server.get("/api/events", async (req, res) => {
 server.post("/api/bets", async (req, res) => {
   try {
     const betData = req.body;
-    console.log(betData);
     const result = await admin.firestore().collection("bets").add(betData);
     res.status(201).json({ id: result.id });
   } catch (error) {

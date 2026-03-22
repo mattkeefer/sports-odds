@@ -6,6 +6,7 @@ import { BookListing, Bet } from "../models/models";
 
 export interface Event {
   id: string;
+  name: string;
   league: string;
   homeTeam: string;
   awayTeam: string;
@@ -177,9 +178,9 @@ export function EventCard({
       </div>
 
       <div className="p-4 space-y-2.5">
-        {sortedBets.map((bet) => (
+        {sortedBets.map((bet, index) => (
           <BetCard
-            key={bet.id}
+            key={bet.id + index}
             bet={bet}
             event={event}
             darkMode={darkMode}

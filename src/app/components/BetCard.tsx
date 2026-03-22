@@ -56,13 +56,13 @@ export function BetCard({
 
       {/* Sportsbook Listings */}
       <div className="space-y-2">
-        {sortedListings.map((listing) => {
+        {sortedListings.map((listing, index) => {
           const impliedProb = oddsToImpliedProb(listing.odds);
           const fairProb = oddsToImpliedProb(listing.fairOdds);
 
           return (
             <div
-              key={listing.id}
+              key={listing.id + index}
               className={`border rounded p-2.5 transition-colors ${
                 darkMode
                   ? "border-gray-600 hover:border-blue-500 bg-gray-800/50"
@@ -146,10 +146,11 @@ export function BetCard({
               </div>
 
               <button
-                onClick={() =>
+                onClick={() => {
                   onPlace({
                     id: bet.id,
-                    eventName: event.id,
+                    eventId: event.id,
+                    eventName: event.name,
                     league: event.league,
                     marketName: bet.marketName,
                     betType: bet.type,
@@ -162,11 +163,11 @@ export function BetCard({
                       listing.recommendedBet,
                     ),
                     placedAt: new Date(),
-                    eventDate: new Date(event.date),
+                    eventDate: new Date(`${event.date} ${event.time}`),
                     placedEV: listing.ev,
                     status: "pending",
-                  })
-                }
+                  });
+                }}
                 className={`w-full py-1 text-xs font-medium text-white rounded transition-colors ${
                   darkMode
                     ? "bg-blue-600 hover:bg-blue-500"

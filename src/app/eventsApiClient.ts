@@ -64,11 +64,9 @@ function groupBetsBySelection(rawBets: RawBet[]): Bet[] {
   const grouped = new Map<string, Bet>();
 
   rawBets.forEach((rawBet) => {
-    const key = `${rawBet.marketName}|${rawBet.selection}`;
-
-    if (!grouped.has(key)) {
-      grouped.set(key, {
-        id: key,
+    if (!grouped.has(rawBet.id)) {
+      grouped.set(rawBet.id, {
+        id: rawBet.id,
         marketName: rawBet.marketName,
         type: rawBet.type,
         selection: rawBet.selection,
@@ -76,7 +74,7 @@ function groupBetsBySelection(rawBets: RawBet[]): Bet[] {
       });
     }
 
-    const bet = grouped.get(key)!;
+    const bet = grouped.get(rawBet.id)!;
     bet.listings.push({
       id: rawBet.id,
       sportsbook: rawBet.sportsbook,
@@ -144,7 +142,12 @@ function getPinnacleDevigFairOdds(
 ): number | null {
   const oddID = odd.oddID;
   const opposingOddID = odd.opposingOddID;
-  if (!oddID || !opposingOddID || !odd.byBookmaker?.pinnacle?.available)
+  if (
+    !oddID ||
+    !opposingOddID ||
+    !odd.byBookmaker?.pinnacle?.available ||
+    !oddsById[opposingOddID]?.byBookmaker?.pinnacle?.available
+  )
     return null;
 
   const thisPinnacleOdds = parseAmericanOdds(odd.byBookmaker?.pinnacle?.odds);
@@ -187,10 +190,8 @@ function mapApiEventToUIEvent(apiEvent: ApiEvent, pinnyMode: boolean): Event {
 
   for (const odd of oddsEntries) {
     const defaultFairOdds = parseAmericanOdds(odd.fairOdds);
-    const pinnyFairOdds = pinnyMode
-      ? getPinnacleDevigFairOdds(odd, oddsById)
-      : null;
-    const fairOdds = pinnyFairOdds ?? defaultFairOdds;
+    const pinnyFairOdds = getPinnacleDevigFairOdds(odd, oddsById);
+    const fairOdds = pinnyMode ? pinnyFairOdds : defaultFairOdds;
     if (fairOdds === null) continue;
 
     const byBookmaker = odd.byBookmaker ?? {};
@@ -220,6 +221,7 @@ function mapApiEventToUIEvent(apiEvent: ApiEvent, pinnyMode: boolean): Event {
 
   return {
     id: apiEvent.eventID,
+    name: `${homeTeam} vs ${awayTeam}`,
     league: apiEvent.leagueID ?? "UNKNOWN",
     homeTeam,
     awayTeam,
@@ -241,6 +243,7 @@ export async function fetchEvents(
   params.set("finalized", "false");
   params.set("live", "false");
   params.set("startsAfter", nowIso);
+  params.set("includeAltLines", "false");
   params.set("limit", "1");
   if (leagues.length > 0) {
     params.set("leagueID", leagues.join(","));

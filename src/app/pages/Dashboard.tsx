@@ -43,8 +43,8 @@ export function DashboardPage() {
   const [selectedLeagues, setSelectedLeagues] =
     useState<string[]>(getListOfLeagues());
   const [dateRange, setDateRange] = useState<[string, string]>([
-    "2026-03-18",
-    "2026-03-18",
+    new Date().toISOString().split("T")[0],
+    new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
   ]);
   const [hiddenBets, setHiddenBets] = useState<Set<string>>(new Set());
   const [events, setEvents] = useState<Event[]>([]);

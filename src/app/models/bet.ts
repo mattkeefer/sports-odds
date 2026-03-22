@@ -1,5 +1,6 @@
 export interface PlacedBet {
   id: string;
+  eventId: string;
   eventName: string;
   league: string;
   marketName: string;
