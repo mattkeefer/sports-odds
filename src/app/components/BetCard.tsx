@@ -1,4 +1,4 @@
-import { EyeOff } from "lucide-react";
+import { Check, EyeOff } from "lucide-react";
 import {
   Bet,
   calculatePotentialWin,
@@ -65,27 +65,57 @@ export function BetCard({
               key={listing.id + index}
               className={`border rounded p-2.5 transition-colors ${
                 darkMode
-                  ? "border-gray-600 hover:border-blue-500 bg-gray-800/50"
-                  : "border-gray-300 hover:border-blue-400 bg-white"
+                  ? "bg-gray-800 border-gray-700 hover:border-gray-600"
+                  : "bg-white border-gray-200 hover:border-gray-300"
               }`}
             >
               <div className="flex items-center justify-between gap-3 mb-2">
-                <div
-                  className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${getSportsbookColor(listing.sportsbook)}`}
-                >
-                  {listing.sportsbook}
+                <div className="flex items-center gap-3 flex-1">
+                  <div
+                    className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${getSportsbookColor(listing.sportsbook)}`}
+                  >
+                    {listing.sportsbook}
+                  </div>
+                  <div
+                    className={`px-2 py-0.5 rounded text-xs font-medium ${
+                      listing.ev >= 5
+                        ? "bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300"
+                        : listing.ev >= 3
+                          ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300"
+                          : "bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300"
+                    }`}
+                  >
+                    +{listing.ev.toFixed(1)}% EV
+                  </div>
                 </div>
-                <div
-                  className={`px-2 py-0.5 rounded text-xs font-medium ${
-                    listing.ev >= 5
-                      ? "bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300"
-                      : listing.ev >= 3
-                        ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300"
-                        : "bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300"
-                  }`}
+                <button
+                  onClick={() => {
+                    onPlace({
+                      id: bet.id,
+                      eventId: event.id,
+                      eventName: event.name,
+                      league: event.league,
+                      marketName: bet.marketName,
+                      betType: bet.type,
+                      selection: bet.selection,
+                      sportsbook: listing.sportsbook,
+                      odds: listing.odds,
+                      amount: listing.recommendedBet,
+                      potentialWin: calculatePotentialWin(
+                        listing.odds,
+                        listing.recommendedBet,
+                      ),
+                      placedAt: new Date(),
+                      eventDate: new Date(`${event.date} ${event.time}`),
+                      placedEV: listing.ev,
+                      status: "pending",
+                    });
+                  }}
+                  className="p-1.5 rounded transition-colors bg-green-600 hover:bg-green-700 text-white"
+                  title="Place bet"
                 >
-                  +{listing.ev.toFixed(1)}% EV
-                </div>
+                  <Check className="w-4 h-4" />
+                </button>
               </div>
 
               <div className="grid grid-cols-4 gap-3 text-xs mb-2">
@@ -100,9 +130,15 @@ export function BetCard({
                   >
                     {formatOdds(listing.odds)}
                   </div>
-                  <div className={darkMode ? "text-gray-400" : "text-gray-500"}>
-                    {(impliedProb * 100).toFixed(1)}%
-                  </div>
+                  {listing.fairLine !== null && (
+                    <div
+                      className={darkMode ? "text-gray-400" : "text-gray-500"}
+                    >
+                      {bet.type === "sp" && listing.fairLine > 0
+                        ? `+${listing.fairLine}`
+                        : listing.fairLine}
+                    </div>
+                  )}
                 </div>
                 <div>
                   <div
@@ -115,9 +151,15 @@ export function BetCard({
                   >
                     {formatOdds(listing.fairOdds)}
                   </div>
-                  <div className={darkMode ? "text-gray-400" : "text-gray-500"}>
-                    {(fairProb * 100).toFixed(1)}%
-                  </div>
+                  {listing.fairLine !== null && (
+                    <div
+                      className={darkMode ? "text-gray-400" : "text-gray-500"}
+                    >
+                      {bet.type === "sp" && listing.fairLine > 0
+                        ? `+${listing.fairLine}`
+                        : listing.fairLine}
+                    </div>
+                  )}
                 </div>
                 <div>
                   <div
@@ -144,38 +186,6 @@ export function BetCard({
                   </div>
                 </div>
               </div>
-
-              <button
-                onClick={() => {
-                  onPlace({
-                    id: bet.id,
-                    eventId: event.id,
-                    eventName: event.name,
-                    league: event.league,
-                    marketName: bet.marketName,
-                    betType: bet.type,
-                    selection: bet.selection,
-                    sportsbook: listing.sportsbook,
-                    odds: listing.odds,
-                    amount: listing.recommendedBet,
-                    potentialWin: calculatePotentialWin(
-                      listing.odds,
-                      listing.recommendedBet,
-                    ),
-                    placedAt: new Date(),
-                    eventDate: new Date(`${event.date} ${event.time}`),
-                    placedEV: listing.ev,
-                    status: "pending",
-                  });
-                }}
-                className={`w-full py-1 text-xs font-medium text-white rounded transition-colors ${
-                  darkMode
-                    ? "bg-blue-600 hover:bg-blue-500"
-                    : "bg-blue-600 hover:bg-blue-700"
-                }`}
-              >
-                Place Bet
-              </button>
             </div>
           );
         })}

@@ -5,6 +5,7 @@ export interface BookListing {
   sportsbook: string;
   odds: number;
   fairOdds: number;
+  fairLine: number | null;
   ev: number;
   recommendedBet: number;
 }

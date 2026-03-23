@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { useDarkMode } from "../Root";
 import {
@@ -17,152 +17,13 @@ import "react-day-picker/dist/style.css";
 import { calculatePotentialWin } from "../models/models";
 import { PlacedBet } from "../models/bet";
 import { PlacedBetCard } from "../components/PlacedBetCard";
-
-// Mock data generator
-function generateMockBets(): PlacedBet[] {
-  const today = new Date();
-  const yesterday = new Date(today);
-  yesterday.setDate(yesterday.getDate() - 1);
-  const twoDaysAgo = new Date(today);
-  twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
-
-  return [
-    {
-      id: "placed-1",
-      eventId: "event-1234",
-      eventName: "Kansas City Chiefs vs Buffalo Bills",
-      league: "NFL",
-      betType: "Moneyline",
-      marketName: "Buffalo Bills Moneyline",
-      selection: "away",
-      sportsbook: "DraftKings",
-      odds: 185,
-      amount: 58.0,
-      potentialWin: 107.3,
-      placedAt: new Date(today.setHours(10, 30, 0)),
-      eventDate: new Date(today.setHours(20, 20, 0)),
-      placedEV: 5.5,
-      status: "pending",
-    },
-    {
-      id: "placed-2",
-      eventId: "event-4567",
-      eventName: "Los Angeles Lakers vs Boston Celtics",
-      league: "NBA",
-      betType: "Player Prop",
-      marketName: "LeBron James Over 28.5 pts",
-      selection: "over",
-      sportsbook: "PointsBet",
-      odds: 120,
-      amount: 42.0,
-      potentialWin: 50.4,
-      placedAt: new Date(today.setHours(14, 15, 0)),
-      eventDate: new Date(today.setHours(19, 0, 0)),
-      placedEV: 4.2,
-      status: "won",
-      profit: 50.4,
-    },
-    {
-      id: "placed-3",
-      eventId: "event-7891",
-      eventName: "Toronto Maple Leafs vs Montreal Canadiens",
-      league: "NHL",
-      betType: "Total",
-      marketName: "Over 6.5",
-      selection: "over",
-      sportsbook: "DraftKings",
-      odds: 110,
-      amount: 48.0,
-      potentialWin: 52.8,
-      placedAt: new Date(today.setHours(16, 45, 0)),
-      eventDate: new Date(today.setHours(22, 0, 0)),
-      placedEV: 1.8,
-      status: "lost",
-      profit: -48.0,
-    },
-    {
-      id: "placed-4",
-      eventId: "event-4561",
-      eventName: "Golden State Warriors vs Phoenix Suns",
-      league: "NBA",
-      betType: "Spread",
-      marketName: "Suns +4.5",
-      selection: "away",
-      sportsbook: "BetMGM",
-      odds: -108,
-      amount: 31.0,
-      potentialWin: 28.7,
-      placedAt: new Date(yesterday.setHours(18, 20, 0)),
-      eventDate: new Date(yesterday.setHours(23, 30, 0)),
-      placedEV: 2.5,
-      status: "won",
-      settledAt: new Date(yesterday.setHours(23, 30, 0)),
-      profit: 28.7,
-    },
-    {
-      id: "placed-5",
-      eventId: "event-789",
-      eventName: "Duke Blue Devils vs North Carolina Tar Heels",
-      league: "NCAA BB",
-      betType: "Total",
-      marketName: "Under 155.5",
-      selection: "under",
-      sportsbook: "FanDuel",
-      odds: 105,
-      amount: 56.0,
-      potentialWin: 58.8,
-      placedAt: new Date(yesterday.setHours(12, 10, 0)),
-      eventDate: new Date(yesterday.setHours(20, 0, 0)),
-      placedEV: 3.0,
-      status: "won",
-      settledAt: new Date(yesterday.setHours(21, 45, 0)),
-      profit: 58.8,
-    },
-    {
-      id: "placed-6",
-      eventId: "event-456",
-      eventName: "Miami Heat vs Milwaukee Bucks",
-      league: "NBA",
-      betType: "Moneyline",
-      marketName: "Miami Heat",
-      selection: "home",
-      sportsbook: "Caesars",
-      odds: 165,
-      amount: 40.0,
-      potentialWin: 66.0,
-      placedAt: new Date(twoDaysAgo.setHours(15, 0, 0)),
-      eventDate: new Date(twoDaysAgo.setHours(21, 0, 0)),
-      placedEV: 2.8,
-      status: "lost",
-      settledAt: new Date(twoDaysAgo.setHours(22, 0, 0)),
-      profit: -40.0,
-    },
-    {
-      id: "placed-7",
-      eventId: "event-123",
-      eventName: "Dallas Cowboys vs Philadelphia Eagles",
-      marketName: "Cowboys -3.5",
-      league: "NFL",
-      betType: "Spread",
-      selection: "home",
-      sportsbook: "FanDuel",
-      odds: -110,
-      amount: 32.0,
-      potentialWin: 29.1,
-      placedAt: new Date(twoDaysAgo.setHours(11, 30, 0)),
-      eventDate: new Date(twoDaysAgo.setHours(19, 15, 0)),
-      placedEV: 1.5,
-      status: "lost",
-      settledAt: new Date(twoDaysAgo.setHours(19, 15, 0)),
-      profit: -32.0,
-    },
-  ];
-}
+import { fetchBets, updateBet } from "../eventsApiClient";
 
 export function BetTrackingPage() {
   const navigate = useNavigate();
   const { darkMode } = useDarkMode();
-  const [allBets] = useState<PlacedBet[]>(generateMockBets());
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [allBets, setAllBets] = useState<PlacedBet[]>([]);
   const [showAllBets, setShowAllBets] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(
     new Date(),
@@ -173,6 +34,30 @@ export function BetTrackingPage() {
     odds: 0,
     amount: 0,
   });
+  const [isLoading, setIsLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function loadBets() {
+      setIsLoading(true);
+      setLoadError(null);
+
+      try {
+        const mapped = await fetchBets();
+        mapped.sort(
+          (a, b) =>
+            new Date(b.eventDate).getTime() - new Date(a.eventDate).getTime(),
+        );
+        setAllBets(mapped);
+      } catch (error) {
+        setLoadError("Failed to load bets.");
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    void loadBets();
+  }, [refreshKey, selectedDate]);
 
   const filteredBets = useMemo(() => {
     if (showAllBets) {
@@ -180,10 +65,13 @@ export function BetTrackingPage() {
     }
 
     if (selectedDate) {
-      const start = startOfDay(selectedDate);
-      const end = endOfDay(selectedDate);
+      const start = startOfDay(selectedDate).getTime();
+      const end = endOfDay(selectedDate).getTime();
       return allBets.filter(
-        (bet) => bet.eventDate >= start && bet.eventDate <= end,
+        (bet) =>
+          bet.eventDate &&
+          new Date(bet.eventDate).getTime() >= start &&
+          new Date(bet.eventDate).getTime() <= end,
       );
     }
 
@@ -222,6 +110,7 @@ export function BetTrackingPage() {
         editForm.odds,
         editForm.amount,
       );
+      updateBet(editingBet).then(() => setRefreshKey((prev) => prev + 1));
       setEditingBet(null);
     }
   };
@@ -234,12 +123,14 @@ export function BetTrackingPage() {
     bet.status = "won";
     bet.settledAt = new Date();
     bet.profit = bet.potentialWin;
+    updateBet(bet).then(() => setRefreshKey((prev) => prev + 1));
   };
 
   const handleMarkLost = (bet: PlacedBet) => {
     bet.status = "lost";
     bet.settledAt = new Date();
     bet.profit = -bet.amount;
+    updateBet(bet).then(() => setRefreshKey((prev) => prev + 1));
   };
 
   return (

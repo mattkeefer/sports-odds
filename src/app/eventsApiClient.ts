@@ -23,7 +23,17 @@ type ApiEvent = {
       betTypeID?: string;
       sideID?: string;
       fairOdds?: string;
-      byBookmaker?: Record<string, { odds?: string; available?: boolean }>;
+      fairSpread?: number;
+      fairOverUnder?: number;
+      byBookmaker?: Record<
+        string,
+        {
+          odds?: string;
+          available?: boolean;
+          spread?: number;
+          overUnder?: number;
+        }
+      >;
     }
   >;
 };
@@ -56,6 +66,7 @@ interface RawBet {
   sportsbook: string;
   odds: number;
   fairOdds: number;
+  fairLine: number | null;
   ev: number;
   recommendedBet: number;
 }
@@ -80,6 +91,7 @@ function groupBetsBySelection(rawBets: RawBet[]): Bet[] {
       sportsbook: rawBet.sportsbook,
       odds: rawBet.odds,
       fairOdds: rawBet.fairOdds,
+      fairLine: rawBet.fairLine,
       ev: rawBet.ev,
       recommendedBet: rawBet.recommendedBet,
     });
@@ -139,7 +151,7 @@ export function formatDate(iso?: string): { date: string; time: string } {
 function getPinnacleDevigFairOdds(
   odd: NonNullable<ApiEvent["odds"]>[string],
   oddsById: Record<string, NonNullable<ApiEvent["odds"]>[string]>,
-): number | null {
+): [number, number | null] | null {
   const oddID = odd.oddID;
   const opposingOddID = odd.opposingOddID;
   if (
@@ -149,6 +161,45 @@ function getPinnacleDevigFairOdds(
     !oddsById[opposingOddID]?.byBookmaker?.pinnacle?.available
   )
     return null;
+
+  var line = null;
+  switch (odd.betTypeID) {
+    case "ou":
+      // Ensure Over/Under bets use the same line
+      const thisLine = odd.byBookmaker?.pinnacle?.overUnder;
+      const opposingLine =
+        oddsById[opposingOddID].byBookmaker?.pinnacle?.overUnder;
+      if (
+        thisLine !== opposingLine ||
+        thisLine === undefined ||
+        opposingLine === undefined
+      )
+        return null;
+      line = thisLine;
+      break;
+    case "sp":
+      // Ensure Spread bets use the same line
+      const thisSpread = odd.byBookmaker?.pinnacle?.spread;
+      const opposingSpread =
+        oddsById[opposingOddID].byBookmaker?.pinnacle?.spread;
+      if (
+        thisSpread !== opposingSpread ||
+        thisSpread === undefined ||
+        opposingSpread === undefined
+      )
+        return null;
+      line = thisSpread;
+      break;
+    case "ml":
+    case "eo":
+    case "yn":
+    case "ml3way":
+    case "prop":
+      // Handle normal bets
+      break;
+    default:
+      return null;
+  }
 
   const thisPinnacleOdds = parseAmericanOdds(odd.byBookmaker?.pinnacle?.odds);
   if (thisPinnacleOdds === null) return null;
@@ -166,7 +217,9 @@ function getPinnacleDevigFairOdds(
   if (total <= 0) return null;
 
   const devigProbability = thisImplied / total;
-  return probabilityToAmericanOdds(devigProbability);
+  const convertedOdds = probabilityToAmericanOdds(devigProbability);
+  if (convertedOdds === null) return null;
+  return [convertedOdds, line];
 }
 
 function mapApiEventToUIEvent(apiEvent: ApiEvent, pinnyMode: boolean): Event {
@@ -190,7 +243,9 @@ function mapApiEventToUIEvent(apiEvent: ApiEvent, pinnyMode: boolean): Event {
 
   for (const odd of oddsEntries) {
     const defaultFairOdds = parseAmericanOdds(odd.fairOdds);
-    const pinnyFairOdds = getPinnacleDevigFairOdds(odd, oddsById);
+    const pinnyResponse = getPinnacleDevigFairOdds(odd, oddsById);
+    if (pinnyMode && pinnyResponse === null) continue;
+    const [pinnyFairOdds, pinnyLine] = pinnyResponse! || [null, null];
     const fairOdds = pinnyMode ? pinnyFairOdds : defaultFairOdds;
     if (fairOdds === null) continue;
 
@@ -198,6 +253,27 @@ function mapApiEventToUIEvent(apiEvent: ApiEvent, pinnyMode: boolean): Event {
     for (const [bookmakerID, line] of Object.entries(byBookmaker)) {
       const sportsbook = SPORTSBOOK_LABELS[bookmakerID.toLowerCase()];
       if (!sportsbook || !line.available) continue;
+
+      var fairLine = null;
+      if (!pinnyMode) {
+        if (odd.betTypeID === "ou") {
+          if (
+            line.overUnder !== odd.fairOverUnder ||
+            line.overUnder === undefined ||
+            odd.fairOverUnder === undefined
+          )
+            continue;
+          fairLine = line.overUnder;
+        } else if (odd.betTypeID === "sp") {
+          if (
+            line.spread !== odd.fairSpread ||
+            line.spread === undefined ||
+            odd.fairSpread === undefined
+          )
+            continue;
+          fairLine = line.spread;
+        }
+      }
 
       const bookOdds = parseAmericanOdds(line.odds);
       if (bookOdds === null) continue;
@@ -211,6 +287,7 @@ function mapApiEventToUIEvent(apiEvent: ApiEvent, pinnyMode: boolean): Event {
         sportsbook,
         odds: bookOdds,
         fairOdds,
+        fairLine: pinnyMode ? pinnyLine : fairLine,
         ev,
         recommendedBet: 0,
       });
@@ -221,7 +298,7 @@ function mapApiEventToUIEvent(apiEvent: ApiEvent, pinnyMode: boolean): Event {
 
   return {
     id: apiEvent.eventID,
-    name: `${homeTeam} vs ${awayTeam}`,
+    name: `${awayTeam} @ ${homeTeam}`,
     league: apiEvent.leagueID ?? "UNKNOWN",
     homeTeam,
     awayTeam,
@@ -243,7 +320,7 @@ export async function fetchEvents(
   params.set("finalized", "false");
   params.set("live", "false");
   params.set("startsAfter", nowIso);
-  params.set("includeAltLines", "false");
+  // params.set("includeAltLines", "true");
   params.set("limit", "1");
   if (leagues.length > 0) {
     params.set("leagueID", leagues.join(","));
@@ -286,6 +363,18 @@ export async function fetchEvents(
     .map((event) => mapApiEventToUIEvent(event, pinnyMode));
 }
 
+export async function fetchBets(): Promise<PlacedBet[]> {
+  const response = await fetch(`${API_BASE_URL}/api/bets`);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch bets (status ${response.status}).`);
+  }
+  const json = await response.json();
+  if (!json.success || !Array.isArray(json.data)) {
+    throw new Error("Unexpected response shape when fetching bets.");
+  }
+  return json.data as PlacedBet[];
+}
+
 export async function saveBet(bet: PlacedBet): Promise<void> {
   return fetch(`${API_BASE_URL}/api/bets`, {
     method: "POST",
@@ -296,6 +385,20 @@ export async function saveBet(bet: PlacedBet): Promise<void> {
   }).then((response) => {
     if (!response.ok) {
       throw new Error(`Failed to save bet (status ${response.status}).`);
+    }
+  });
+}
+
+export async function updateBet(bet: PlacedBet): Promise<void> {
+  return fetch(`${API_BASE_URL}/api/bets/${bet.id}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(bet),
+  }).then((response) => {
+    if (!response.ok) {
+      throw new Error(`Failed to update bet (status ${response.status}).`);
     }
   });
 }

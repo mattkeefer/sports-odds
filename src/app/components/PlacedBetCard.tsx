@@ -22,7 +22,7 @@ export function PlacedBetCard({
     `${value < 0 ? "-$" : "$"}${Math.abs(value).toFixed(2)}`;
 
   const formatSignedPercent = (value: number) =>
-    `${value > 0 ? "+" : ""}${value.toFixed(1)}%`;
+    `${value > 0 ? "+" : "-"}${value.toFixed(1)}%`;
 
   return (
     <div
@@ -142,7 +142,7 @@ export function PlacedBetCard({
                     : "bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300"
               }`}
             >
-              {bet.placedEV.toFixed(1)}%
+              {formatSignedPercent(bet.placedEV)}
             </div>
           </div>
 
@@ -165,7 +165,7 @@ export function PlacedBetCard({
             >
               {bet.status === "pending"
                 ? formatCurrency(bet.potentialWin)
-                : formatCurrency(bet.actualReturn || 0)}
+                : formatCurrency(bet.profit || 0)}
             </div>
           </div>
 

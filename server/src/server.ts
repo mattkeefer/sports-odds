@@ -44,7 +44,7 @@ function toEventsQuery(searchParams: any): EventsQuery {
     oddID: searchParams["oddID"] ?? undefined,
     bookmakerID: searchParams["bookmakerID"] ?? undefined,
     startsAfter: searchParams["startsAfter"] ?? undefined,
-    includeAltLines: parseBoolean(searchParams["includeAltLines"]) ?? false,
+    includeAltLines: parseBoolean(searchParams["includeAltLines"]),
     cursor: searchParams["cursor"],
     limit: parseNumber(searchParams["limit"]) ?? 1,
   };
@@ -71,16 +71,50 @@ server.get("/api/events", async (req, res) => {
   }
 });
 
-server.post("/api/bets", async (req, res) => {
+server.get("/api/bets", async (req, res) => {
   try {
-    const betData = req.body;
-    const result = await admin.firestore().collection("bets").add(betData);
-    res.status(201).json({ id: result.id });
+    const betsSnapshot = await admin.firestore().collection("bets").get();
+    const bets = betsSnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+    res.status(200).json({ success: true, data: bets });
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Unknown backend error";
     res.status(502).json({ error: message });
     console.error("Error handling /api/bets request:", error);
+  }
+});
+
+server.post("/api/bets", async (req, res) => {
+  try {
+    const betData = req.body;
+    const result = await admin
+      .firestore()
+      .collection("bets")
+      .doc(betData.id)
+      .set(betData);
+    res.status(201).json({ id: betData.id, success: true });
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Unknown backend error";
+    res.status(502).json({ error: message });
+    console.error("Error handling /api/bets request:", error);
+  }
+});
+
+server.put("/api/bets/:id", async (req, res) => {
+  try {
+    const betId = req.params.id;
+    const betData = req.body;
+    await admin.firestore().collection("bets").doc(betId).update(betData);
+    res.status(200).json({ success: true });
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Unknown backend error";
+    res.status(502).json({ error: message });
+    console.error("Error handling /api/bets/:id request:", error);
   }
 });
 
