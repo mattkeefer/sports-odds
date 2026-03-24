@@ -38,7 +38,10 @@ export function BetCard({
           <div
             className={`text-sm font-medium mb-1 ${darkMode ? "text-white" : "text-gray-900"}`}
           >
-            {bet.marketName}: {bet.selection}
+            {bet.marketName}:&ensp;
+            <span className="font-semibold">
+              {bet.selection.charAt(0).toUpperCase() + bet.selection.slice(1)}
+            </span>
           </div>
         </div>
         <button
@@ -57,9 +60,6 @@ export function BetCard({
       {/* Sportsbook Listings */}
       <div className="space-y-2">
         {sortedListings.map((listing, index) => {
-          const impliedProb = oddsToImpliedProb(listing.odds);
-          const fairProb = oddsToImpliedProb(listing.fairOdds);
-
           return (
             <div
               key={listing.id + index}

@@ -85,7 +85,8 @@ export function PlacedBetCard({
           <p
             className={`text-sm mb-2 ${darkMode ? "text-gray-400" : "text-gray-600"}`}
           >
-            {bet.betType}: {bet.selection}
+            {bet.marketName}:{" "}
+            {bet.selection.charAt(0).toUpperCase() + bet.selection.slice(1)}
           </p>
           <p
             className={`text-xs mb-1 ${darkMode ? "text-gray-500" : "text-gray-500"}`}

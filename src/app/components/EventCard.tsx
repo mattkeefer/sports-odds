@@ -90,7 +90,7 @@ export function EventCard({
               className={`flex items-center gap-1.5 text-xs ${darkMode ? "text-gray-400" : "text-gray-600"}`}
             >
               <Calendar className="w-3.5 h-3.5" />
-              {event.date} at {event.time}
+              {event.date} @ {event.time}
             </div>
           </div>
           <div className="flex items-center gap-2">
