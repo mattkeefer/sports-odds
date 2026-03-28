@@ -6,7 +6,7 @@ import {
   Calendar,
   TrendingUp,
   TrendingDown,
-  Clock,
+  Hash,
   DollarSign,
   Minus,
   X,
@@ -78,21 +78,31 @@ export function BetTrackingPage() {
     return allBets.filter((bet) => isToday(bet.eventDate));
   }, [allBets, showAllBets, selectedDate]);
 
-  // Calculate today's stats
-  const todayStats = useMemo(() => {
-    const todayBets = allBets.filter((bet) => isToday(bet.eventDate));
-    const openBets = todayBets.filter((bet) => bet.status === "pending");
-    const settledBets = todayBets.filter((bet) => bet.status !== "pending");
-
-    const atRisk = openBets.reduce((sum, bet) => sum + bet.amount, 0);
-    const profit = settledBets.reduce((sum, bet) => sum + (bet.profit || 0), 0);
+  // Calculate stats for the day
+  const stats = useMemo(() => {
+    const numBets = filteredBets.length;
+    const betAmount = filteredBets.reduce((sum, bet) => sum + bet.amount, 0);
+    const profit = filteredBets.reduce(
+      (sum, bet) => sum + (bet.profit || 0),
+      0,
+    );
+    const profitPercent = betAmount > 0 ? (profit / betAmount) * 100 : 0;
+    const expectedProfit = filteredBets.reduce((sum, bet) => {
+      const expectedValue = (bet.placedEV / 100 || 0) * bet.amount;
+      return sum + expectedValue;
+    }, 0);
+    const expectedProfitPercent =
+      betAmount > 0 ? (expectedProfit / betAmount) * 100 : 0;
 
     return {
-      openBets: openBets.length,
-      atRisk,
+      numBets,
+      betAmount,
       profit,
+      profitPercent,
+      expectedProfit,
+      expectedProfitPercent,
     };
-  }, [allBets]);
+  }, [filteredBets]);
 
   const handleEditBet = (bet: PlacedBet) => {
     setEditingBet(bet);
@@ -160,12 +170,15 @@ export function BetTrackingPage() {
               <p className={darkMode ? "text-gray-400" : "text-gray-600"}>
                 Monitor your placed bets and track performance
               </p>
+              {loadError && (
+                <p className="text-sm text-red-500 mt-1">{loadError}</p>
+              )}
             </div>
           </div>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           {/* Open Bets */}
           <div
             className={`p-6 rounded-xl border ${
@@ -178,16 +191,16 @@ export function BetTrackingPage() {
               <span
                 className={`text-sm ${darkMode ? "text-gray-400" : "text-gray-600"}`}
               >
-                Open Bets Today
+                Placed Bets
               </span>
-              <Clock
+              <Hash
                 className={`w-5 h-5 ${darkMode ? "text-blue-400" : "text-blue-600"}`}
               />
             </div>
             <div
               className={`text-3xl font-bold ${darkMode ? "text-white" : "text-gray-900"}`}
             >
-              {todayStats.openBets}
+              {stats.numBets}
             </div>
           </div>
 
@@ -203,7 +216,7 @@ export function BetTrackingPage() {
               <span
                 className={`text-sm ${darkMode ? "text-gray-400" : "text-gray-600"}`}
               >
-                $ At Risk Today
+                Amount Bet
               </span>
               <DollarSign
                 className={`w-5 h-5 ${darkMode ? "text-yellow-400" : "text-yellow-600"}`}
@@ -212,7 +225,7 @@ export function BetTrackingPage() {
             <div
               className={`text-3xl font-bold ${darkMode ? "text-white" : "text-gray-900"}`}
             >
-              ${todayStats.atRisk.toFixed(2)}
+              ${stats.betAmount.toFixed(2)}
             </div>
           </div>
 
@@ -228,9 +241,9 @@ export function BetTrackingPage() {
               <span
                 className={`text-sm ${darkMode ? "text-gray-400" : "text-gray-600"}`}
               >
-                Profit Today
+                Profit
               </span>
-              {todayStats.profit >= 0 ? (
+              {stats.profit >= 0 ? (
                 <TrendingUp className="w-5 h-5 text-green-500" />
               ) : (
                 <TrendingDown className="w-5 h-5 text-red-500" />
@@ -238,10 +251,52 @@ export function BetTrackingPage() {
             </div>
             <div
               className={`text-3xl font-bold ${
-                todayStats.profit >= 0 ? "text-green-500" : "text-red-500"
+                stats.profit >= 0 ? "text-green-500" : "text-red-500"
               }`}
             >
-              {todayStats.profit >= 0 ? "+" : ""}${todayStats.profit.toFixed(2)}
+              {stats.profit >= 0 ? "+" : ""}${stats.profit.toFixed(2)}
+            </div>
+            <div
+              className={`text-lg ${darkMode ? "text-gray-400" : "text-gray-600"}`}
+            >
+              {stats.profitPercent >= 0 ? "(+" : "("}
+              {stats.profitPercent.toFixed(2)}%{")"}
+            </div>
+          </div>
+
+          {/* Expected Value */}
+          <div
+            className={`p-6 rounded-xl border ${
+              darkMode
+                ? "bg-gray-800 border-gray-700"
+                : "bg-white border-gray-200"
+            }`}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <span
+                className={`text-sm ${darkMode ? "text-gray-400" : "text-gray-600"}`}
+              >
+                Expected Profit
+              </span>
+              {stats.expectedProfit >= 0 ? (
+                <TrendingUp className="w-5 h-5 text-green-500" />
+              ) : (
+                <TrendingDown className="w-5 h-5 text-red-500" />
+              )}
+            </div>
+            <div
+              className={`text-3xl font-bold ${
+                stats.expectedProfit >= 0 ? "text-green-500" : "text-red-500"
+              }`}
+            >
+              {stats.expectedProfit >= 0 ? "+" : ""}$
+              {stats.expectedProfit.toFixed(2)}
+            </div>
+            <div
+              className={`text-lg ${darkMode ? "text-gray-400" : "text-gray-600"}`}
+            >
+              {stats.expectedProfitPercent >= 0 ? "(+" : "("}
+              {stats.expectedProfitPercent.toFixed(2)}%{")"}
             </div>
           </div>
         </div>
@@ -340,7 +395,19 @@ export function BetTrackingPage() {
 
         {/* Bets List */}
         <div className="space-y-3">
-          {filteredBets.length > 0 ? (
+          {isLoading ? (
+            <div
+              className={`border rounded-lg p-12 text-center ${
+                darkMode
+                  ? "bg-gray-800 border-gray-700"
+                  : "bg-white border-gray-200"
+              }`}
+            >
+              <p className={darkMode ? "text-gray-400" : "text-gray-500"}>
+                Loading events...
+              </p>
+            </div>
+          ) : filteredBets.length > 0 ? (
             filteredBets.map((bet) => (
               <PlacedBetCard
                 key={bet.id}

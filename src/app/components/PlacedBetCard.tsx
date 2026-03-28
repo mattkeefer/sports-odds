@@ -151,7 +151,7 @@ export function PlacedBetCard({
             <div
               className={`text-xs mb-1 ${darkMode ? "text-gray-400" : "text-gray-600"}`}
             >
-              {bet.status === "pending" ? "To Win" : "Return"}
+              {bet.status === "pending" ? "To Win" : "Profit"}
             </div>
             <div
               className={`font-bold ${
