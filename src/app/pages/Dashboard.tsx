@@ -48,7 +48,7 @@ export function DashboardPage() {
   ]);
   const [hiddenBets, setHiddenBets] = useState<Set<string>>(new Set());
   const [events, setEvents] = useState<Event[]>([]);
-  const [futureBets, setFutureBets] = useState<PlacedBet[]>([]);
+  const [placedBets, setPlacedBets] = useState<PlacedBet[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -92,7 +92,7 @@ export function DashboardPage() {
 
       try {
         const mapped = await fetchBets(dateRange[0], dateRange[1]);
-        setFutureBets(mapped);
+        setPlacedBets(mapped);
       } catch (error) {
         setLoadError("Failed to load bets.");
       } finally {
@@ -104,30 +104,40 @@ export function DashboardPage() {
   }, [refreshKey, dateRange]);
 
   const filteredEvents = useMemo(() => {
+    const placedBetIds = new Set(placedBets.map((b) => b.id));
+    const placedMarketNames = new Set(placedBets.map((b) => b.marketName));
+
+    const startDate = new Date(dateRange[0]);
+    const endDate = new Date(dateRange[1]);
+
     return events
+      .filter((event) => selectedLeagues.includes(event.league))
+      .filter((event) => {
+        const eventDate = new Date(event.date);
+        return eventDate >= startDate && eventDate <= endDate;
+      })
       .map((event) => {
         const filteredBets = event.bets
-          .filter((bet) => !hiddenBets.has(bet.id))
           .filter(
             (bet) =>
-              !futureBets.some(
-                (placed) =>
-                  placed.id === bet.id// || placed.marketName === bet.marketName,
-              ),
+              !hiddenBets.has(bet.id) &&
+              !placedBetIds.has(bet.id) &&
+              !placedMarketNames.has(bet.marketName),
           )
           .map((bet) => {
             if (!bet.listings) return { ...bet, listings: [] };
+
             const filteredListings = bet.listings
-              .filter((bet: BookListing) =>
-                selectedSportsbooks.includes(bet.sportsbook),
+              .filter((listing: BookListing) =>
+                selectedSportsbooks.includes(listing.sportsbook),
               )
               .filter(
-                (bet: BookListing) =>
-                  bet.odds >= oddsRange[0] && bet.odds <= oddsRange[1],
+                (listing: BookListing) =>
+                  listing.odds >= oddsRange[0] && listing.odds <= oddsRange[1],
               )
-              .filter((bet: BookListing) => bet.ev >= minEV)
-              .map((bet: BookListing) =>
-                calculateRecommendedBet(bet, bankroll),
+              .filter((listing: BookListing) => listing.ev >= minEV)
+              .map((listing: BookListing) =>
+                calculateRecommendedBet(listing, bankroll),
               );
 
             return { ...bet, listings: filteredListings };
@@ -136,16 +146,10 @@ export function DashboardPage() {
 
         return { ...event, bets: filteredBets };
       })
-      .filter((event) => selectedLeagues.includes(event.league))
-      .filter((event) => {
-        const eventDate = new Date(event.date);
-        const startDate = new Date(dateRange[0]);
-        const endDate = new Date(dateRange[1]);
-        return eventDate >= startDate && eventDate <= endDate;
-      })
       .filter((event) => event.bets.length > 0);
   }, [
     events,
+    placedBets,
     hiddenBets,
     selectedSportsbooks,
     oddsRange,
