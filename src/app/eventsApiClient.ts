@@ -363,8 +363,18 @@ export async function fetchEvents(
     .map((event) => mapApiEventToUIEvent(event, pinnyMode));
 }
 
-export async function fetchBets(): Promise<PlacedBet[]> {
-  const response = await fetch(`${API_BASE_URL}/api/bets`);
+export async function fetchBets(
+  startsAfter?: string,
+  startsBefore?: string,
+): Promise<PlacedBet[]> {
+  const params = new URLSearchParams();
+  if (startsAfter) {
+    params.set("startsAfter", startsAfter);
+  }
+  if (startsBefore) {
+    params.set("startsBefore", startsBefore);
+  }
+  const response = await fetch(`${API_BASE_URL}/api/bets?${params.toString()}`);
   if (!response.ok) {
     throw new Error(`Failed to fetch bets (status ${response.status}).`);
   }

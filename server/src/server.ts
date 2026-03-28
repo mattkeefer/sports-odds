@@ -4,6 +4,7 @@ import cors from "cors";
 import { getEvents } from "./sportsGameOddsClient.js";
 import { EventsQuery } from "./types.js";
 import { initializeApp } from "firebase-admin/app";
+import { Query, DocumentData } from "firebase-admin/firestore";
 import admin from "firebase-admin";
 import * as serviceAccount from "../../sports-odds-4fe36-firebase-adminsdk-fbsvc-aaeac952be.json" with { type: "json" };
 
@@ -73,7 +74,20 @@ server.get("/api/events", async (req, res) => {
 
 server.get("/api/bets", async (req, res) => {
   try {
-    const betsSnapshot = await admin.firestore().collection("bets").get();
+    const { startsAfter, startsBefore } = req.query;
+    let query: Query<DocumentData> = admin.firestore().collection("bets");
+
+    if (startsAfter) {
+      const startDate = new Date(startsAfter as string);
+      query = query.where("eventDate", ">=", startDate);
+    }
+
+    if (startsBefore) {
+      const endDate = new Date(startsBefore as string);
+      query = query.where("eventDate", "<=", endDate);
+    }
+
+    const betsSnapshot = await query.get();
     const bets = betsSnapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),

@@ -16,7 +16,7 @@ import {
   Crown,
   ClipboardList,
 } from "lucide-react";
-import { fetchEvents, saveBet } from "../eventsApiClient";
+import { fetchBets, fetchEvents, saveBet } from "../eventsApiClient";
 import { useDarkMode } from "../Root";
 import { PlacedBet } from "../models/bet";
 
@@ -48,6 +48,7 @@ export function DashboardPage() {
   ]);
   const [hiddenBets, setHiddenBets] = useState<Set<string>>(new Set());
   const [events, setEvents] = useState<Event[]>([]);
+  const [futureBets, setFutureBets] = useState<PlacedBet[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -84,11 +85,36 @@ export function DashboardPage() {
     return () => controller.abort();
   }, [refreshKey, selectedLeagues, pinnyMode]);
 
+  useEffect(() => {
+    async function loadBets() {
+      setIsLoading(true);
+      setLoadError(null);
+
+      try {
+        const mapped = await fetchBets(dateRange[0], dateRange[1]);
+        setFutureBets(mapped);
+      } catch (error) {
+        setLoadError("Failed to load bets.");
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    void loadBets();
+  }, [refreshKey, dateRange]);
+
   const filteredEvents = useMemo(() => {
     return events
       .map((event) => {
         const filteredBets = event.bets
           .filter((bet) => !hiddenBets.has(bet.id))
+          .filter(
+            (bet) =>
+              !futureBets.some(
+                (placed) =>
+                  placed.id === bet.id// || placed.marketName === bet.marketName,
+              ),
+          )
           .map((bet) => {
             if (!bet.listings) return { ...bet, listings: [] };
             const filteredListings = bet.listings
@@ -138,6 +164,7 @@ export function DashboardPage() {
     alert(
       `Bet ${bet.id} placed successfully at ${bet.sportsbook} for $${bet.amount}!`,
     );
+    handleHideBet(bet.id);
   };
 
   const handleRefresh = () => {
