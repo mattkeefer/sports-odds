@@ -257,7 +257,9 @@ export function BetTrackingPage() {
               {stats.profit >= 0 ? "+" : ""}${stats.profit.toFixed(2)}
             </div>
             <div
-              className={`text-lg ${darkMode ? "text-gray-400" : "text-gray-600"}`}
+              className={`text-lg font-semibold ${
+                stats.profitPercent >= 0 ? "text-green-500" : "text-red-500"
+              }`}
             >
               {stats.profitPercent >= 0 ? "(+" : "("}
               {stats.profitPercent.toFixed(2)}%{")"}
@@ -293,7 +295,11 @@ export function BetTrackingPage() {
               {stats.expectedProfit.toFixed(2)}
             </div>
             <div
-              className={`text-lg ${darkMode ? "text-gray-400" : "text-gray-600"}`}
+              className={`text-lg font-semibold ${
+                stats.expectedProfitPercent >= 0
+                  ? "text-green-500"
+                  : "text-red-500"
+              }`}
             >
               {stats.expectedProfitPercent >= 0 ? "(+" : "("}
               {stats.expectedProfitPercent.toFixed(2)}%{")"}

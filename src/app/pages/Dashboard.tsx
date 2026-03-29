@@ -25,7 +25,9 @@ function calculateRecommendedBet(
   bankroll: number,
 ): BookListing {
   const kellyFraction = 0.25;
-  const recommendedBet = (listing.ev / 100) * bankroll * kellyFraction;
+  const recommendedBet = Math.round(
+    (listing.ev / 100) * bankroll * kellyFraction,
+  );
   return { ...listing, recommendedBet: Math.max(0, recommendedBet) };
 }
 
