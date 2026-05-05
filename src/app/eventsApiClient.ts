@@ -183,9 +183,9 @@ function getPinnacleDevigFairOdds(
       const opposingSpread =
         oddsById[opposingOddID].byBookmaker?.pinnacle?.spread;
       if (
-        thisSpread !== opposingSpread ||
         thisSpread === undefined ||
-        opposingSpread === undefined
+        opposingSpread === undefined ||
+        Math.abs(thisSpread) !== Math.abs(opposingSpread)
       )
         return null;
       line = thisSpread;
@@ -255,7 +255,16 @@ function mapApiEventToUIEvent(apiEvent: ApiEvent, pinnyMode: boolean): Event {
       if (!sportsbook || !line.available) continue;
 
       var fairLine = null;
-      if (!pinnyMode) {
+      if (pinnyMode) {
+        if (odd.betTypeID === "ou") {
+          if (line.overUnder !== pinnyLine || line.overUnder === undefined)
+            continue;
+          fairLine = line.overUnder;
+        } else if (odd.betTypeID === "sp") {
+          if (line.spread !== pinnyLine || line.spread === undefined) continue;
+          fairLine = line.spread;
+        }
+      } else {
         if (odd.betTypeID === "ou") {
           if (
             line.overUnder !== odd.fairOverUnder ||
