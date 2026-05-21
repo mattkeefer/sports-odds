@@ -36,6 +36,26 @@ function parseNumber(value: string | null): number | undefined {
   return Number.isFinite(num) ? num : undefined;
 }
 
+function toStoredDateString(
+  value: string | undefined,
+  endOfDay = false,
+): string | undefined {
+  if (!value) return undefined;
+
+  const dateOnlyMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (dateOnlyMatch) {
+    const [, year, month, day] = dateOnlyMatch;
+    const date = new Date(Number(year), Number(month) - 1, Number(day));
+    if (endOfDay) {
+      date.setHours(23, 59, 59, 999);
+    }
+    return date.toISOString();
+  }
+
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? undefined : date.toISOString();
+}
+
 function toEventsQuery(searchParams: any): EventsQuery {
   return {
     oddsAvailable: parseBoolean(searchParams["oddsAvailable"]) ?? true,
@@ -77,14 +97,18 @@ server.get("/api/bets", async (req, res) => {
     const { startsAfter, startsBefore } = req.query;
     let query: Query<DocumentData> = admin.firestore().collection("bets");
 
-    if (startsAfter) {
-      const startDate = new Date(startsAfter as string);
-      query = query.where("eventDate", ">=", startDate);
+    const startsAfterIso = toStoredDateString(startsAfter as string | undefined);
+    const startsBeforeIso = toStoredDateString(
+      startsBefore as string | undefined,
+      true,
+    );
+
+    if (startsAfterIso) {
+      query = query.where("eventDate", ">=", startsAfterIso);
     }
 
-    if (startsBefore) {
-      const endDate = new Date(startsBefore as string);
-      query = query.where("eventDate", "<=", endDate);
+    if (startsBeforeIso) {
+      query = query.where("eventDate", "<=", startsBeforeIso);
     }
 
     const betsSnapshot = await query.get();

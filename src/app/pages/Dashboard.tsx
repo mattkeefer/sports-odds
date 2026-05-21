@@ -34,14 +34,14 @@ function calculateRecommendedBet(
 export function DashboardPage() {
   const navigate = useNavigate();
   const { darkMode, setDarkMode } = useDarkMode();
-  const [pinnyMode, setPinnyMode] = useState(false);
+  const [pinnyMode, setPinnyMode] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
   const [bankroll, setBankroll] = useState(1000);
   const [selectedSportsbooks, setSelectedSportsbooks] = useState<string[]>(
     getListOfSportsbooks(),
   );
-  const [oddsRange, setOddsRange] = useState<[number, number]>([-500, 500]);
-  const [minEV, setMinEV] = useState(3.0);
+  const [oddsRange, setOddsRange] = useState<[number, number]>([-300, 200]);
+  const [minEV, setMinEV] = useState(2.5);
   const [selectedLeagues, setSelectedLeagues] =
     useState<string[]>(getListOfLeagues());
   const [dateRange, setDateRange] = useState<[string, string]>([
