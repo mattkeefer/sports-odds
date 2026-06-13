@@ -145,7 +145,11 @@ export function DashboardPage() {
                 calculateRecommendedBet(listing, bankroll),
               );
 
-            return { ...bet, listings: filteredListings };
+            return {
+              ...bet,
+              listings: filteredListings,
+              comparisonListings: bet.comparisonListings ?? bet.listings,
+            };
           })
           .filter((bet) => bet.listings.length > 0);
 

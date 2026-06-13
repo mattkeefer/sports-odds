@@ -16,6 +16,7 @@ export interface Bet {
   type: string;
   selection: string;
   listings: BookListing[];
+  comparisonListings?: BookListing[];
 }
 
 export function getListOfSportsbooks(): string[] {

@@ -1,4 +1,4 @@
-import { Check, EyeOff } from "lucide-react";
+import { Check, EyeOff, Table2 } from "lucide-react";
 import {
   Bet,
   calculatePotentialWin,
@@ -8,6 +8,22 @@ import {
 } from "../models/models";
 import { PlacedBet } from "../models/bet";
 import { Event } from "./EventCard";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "./ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "./ui/table";
 
 interface BetCardProps {
   bet: Bet;
@@ -26,6 +42,12 @@ export function BetCard({
 }: BetCardProps) {
   // Sort listings by EV descending
   const sortedListings = [...bet.listings].sort((a, b) => b.ev - a.ev);
+  const comparisonListings = [
+    ...(bet.comparisonListings ?? bet.listings),
+  ].sort((a, b) => b.odds - a.odds);
+  const displayedSportsbooks = new Set(
+    bet.listings.map((listing) => listing.sportsbook),
+  );
 
   return (
     <div
@@ -44,17 +66,143 @@ export function BetCard({
             </span>
           </div>
         </div>
-        <button
-          onClick={() => onHide(bet.id)}
-          className={`p-1.5 rounded transition-colors ${
-            darkMode
-              ? "text-gray-400 hover:text-gray-300 hover:bg-gray-700"
-              : "text-gray-500 hover:text-gray-700 hover:bg-gray-200"
-          }`}
-          title="Hide bet"
-        >
-          <EyeOff className="w-4 h-4" />
-        </button>
+        <div className="flex items-center gap-1.5">
+          <Dialog>
+            <DialogTrigger asChild>
+              <button
+                className={`p-1.5 rounded transition-colors ${
+                  darkMode
+                    ? "text-blue-300 hover:text-blue-200 hover:bg-gray-700"
+                    : "text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                }`}
+                title="Compare sportsbook odds"
+              >
+                <Table2 className="w-4 h-4" />
+              </button>
+            </DialogTrigger>
+            <DialogContent
+              className={`sm:max-w-3xl ${
+                darkMode
+                  ? "bg-gray-900 border-gray-700 text-white"
+                  : "bg-white border-gray-200 text-gray-900"
+              }`}
+            >
+              <DialogHeader>
+                <DialogTitle>Sportsbook Odds</DialogTitle>
+                <DialogDescription
+                  className={darkMode ? "text-gray-400" : "text-gray-600"}
+                >
+                  {event.name} - {bet.marketName}:{" "}
+                  {bet.selection.charAt(0).toUpperCase() +
+                    bet.selection.slice(1)}
+                </DialogDescription>
+              </DialogHeader>
+
+              <Table>
+                <TableHeader>
+                  <TableRow className={darkMode ? "border-gray-700" : ""}>
+                    <TableHead
+                      className={darkMode ? "text-gray-300" : "text-gray-600"}
+                    >
+                      Sportsbook
+                    </TableHead>
+                    <TableHead
+                      className={darkMode ? "text-gray-300" : "text-gray-600"}
+                    >
+                      Odds
+                    </TableHead>
+                    <TableHead
+                      className={darkMode ? "text-gray-300" : "text-gray-600"}
+                    >
+                      Line
+                    </TableHead>
+                    <TableHead
+                      className={darkMode ? "text-gray-300" : "text-gray-600"}
+                    >
+                      Fair Odds
+                    </TableHead>
+                    <TableHead
+                      className={darkMode ? "text-gray-300" : "text-gray-600"}
+                    >
+                      Implied
+                    </TableHead>
+                    <TableHead
+                      className={darkMode ? "text-gray-300" : "text-gray-600"}
+                    >
+                      EV
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {comparisonListings.map((listing) => (
+                    <TableRow
+                      key={`${listing.sportsbook}-${listing.odds}-${listing.fairLine ?? "line"}`}
+                      className={darkMode ? "border-gray-800" : ""}
+                    >
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${getSportsbookColor(listing.sportsbook)}`}
+                          >
+                            {listing.sportsbook}
+                          </span>
+                          {displayedSportsbooks.has(listing.sportsbook) && (
+                            <span
+                              className={`text-[11px] ${
+                                darkMode ? "text-green-300" : "text-green-700"
+                              }`}
+                            >
+                              shown
+                            </span>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="font-medium">
+                        {formatOdds(listing.odds)}
+                      </TableCell>
+                      <TableCell>
+                        {listing.fairLine === null
+                          ? "-"
+                          : bet.type === "sp" && listing.fairLine > 0
+                            ? `+${listing.fairLine}`
+                            : listing.fairLine}
+                      </TableCell>
+                      <TableCell>{formatOdds(listing.fairOdds)}</TableCell>
+                      <TableCell>
+                        {(oddsToImpliedProb(listing.odds) * 100).toFixed(1)}%
+                      </TableCell>
+                      <TableCell
+                        className={
+                          listing.ev >= 0
+                            ? darkMode
+                              ? "text-green-300"
+                              : "text-green-700"
+                            : darkMode
+                              ? "text-red-300"
+                              : "text-red-600"
+                        }
+                      >
+                        {listing.ev >= 0 ? "+" : ""}
+                        {listing.ev.toFixed(1)}%
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </DialogContent>
+          </Dialog>
+          <button
+            onClick={() => onHide(bet.id)}
+            className={`p-1.5 rounded transition-colors ${
+              darkMode
+                ? "text-gray-400 hover:text-gray-300 hover:bg-gray-700"
+                : "text-gray-500 hover:text-gray-700 hover:bg-gray-200"
+            }`}
+            title="Hide bet"
+          >
+            <EyeOff className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
       {/* Sportsbook Listings */}

@@ -91,11 +91,12 @@ function groupBetsBySelection(rawBets: RawBet[]): Bet[] {
         type: rawBet.type,
         selection: rawBet.selection,
         listings: [],
+        comparisonListings: [],
       });
     }
 
     const bet = grouped.get(rawBet.id)!;
-    bet.listings.push({
+    const listing = {
       id: rawBet.id,
       sportsbook: rawBet.sportsbook,
       odds: rawBet.odds,
@@ -103,7 +104,9 @@ function groupBetsBySelection(rawBets: RawBet[]): Bet[] {
       fairLine: rawBet.fairLine,
       ev: rawBet.ev,
       recommendedBet: rawBet.recommendedBet,
-    });
+    };
+    bet.listings.push(listing);
+    bet.comparisonListings?.push(listing);
   });
 
   return Array.from(grouped.values());
@@ -341,23 +344,6 @@ export async function fetchEvents(
   params.set("limit", "1");
   if (leagues.length > 0) {
     params.set("leagueID", leagues.join(","));
-  }
-  const requestSportsbooks = [...sportsbooks];
-  if (pinnyMode && !requestSportsbooks.includes("Pinnacle")) {
-    requestSportsbooks.push("Pinnacle");
-  }
-  if (requestSportsbooks.length > 0) {
-    params.set(
-      "bookmakerID",
-      requestSportsbooks
-        .map(
-          (s) =>
-            Object.entries(SPORTSBOOK_LABELS)
-              .find(([_key, val]) => val === s)?.[0]
-              ?.toLowerCase() ?? s.toLowerCase(),
-        )
-        .join(","),
-    );
   }
 
   const response = await fetch(
