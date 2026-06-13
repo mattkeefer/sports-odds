@@ -64,7 +64,6 @@ export function DashboardPage() {
 
       try {
         const mapped = await fetchEvents(
-          selectedSportsbooks,
           selectedLeagues,
           pinnyMode,
           controller.signal,
@@ -151,7 +150,11 @@ export function DashboardPage() {
               comparisonListings: bet.comparisonListings ?? bet.listings,
             };
           })
-          .filter((bet) => bet.listings.length > 0);
+          .filter(
+            (bet) =>
+              bet.listings.length > 0 &&
+              (bet.comparisonListings ?? bet.listings).length >= 2,
+          );
 
         return { ...event, bets: filteredBets };
       })

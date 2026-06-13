@@ -330,7 +330,6 @@ function mapApiEventToUIEvent(apiEvent: ApiEvent, pinnyMode: boolean): Event {
 }
 
 export async function fetchEvents(
-  sportsbooks: string[],
   leagues: string[],
   pinnyMode: boolean,
   signal?: AbortSignal,
