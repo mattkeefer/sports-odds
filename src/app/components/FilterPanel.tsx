@@ -18,7 +18,15 @@ interface FilterPanelProps {
   setDateRange: (value: [string, string]) => void;
 }
 
-const LEAGUES = ["NFL", "NBA", "MLB", "NHL", "NCAAF", "NCAAB"];
+const LEAGUES = [
+  "NFL",
+  "NBA",
+  "MLB",
+  "NHL",
+  "NCAAF",
+  "NCAAB",
+  "INTERNATIONAL_SOCCER",
+];
 
 export function FilterPanel({
   darkMode,

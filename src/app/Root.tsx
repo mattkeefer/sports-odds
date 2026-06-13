@@ -1,17 +1,18 @@
 import { useState } from "react";
 import { Outlet, useOutletContext } from "react-router";
-import { AuthPage, UserData } from "./pages/Auth";
+import { AuthPage } from "./pages/Auth";
+import { UserModel } from "./models/user";
 
 interface RootContextType {
   darkMode: boolean;
   setDarkMode: (value: boolean) => void;
-  user: UserData | null;
-  setUser: (user: UserData | null) => void;
+  user: UserModel | null;
+  setUser: (user: UserModel | null) => void;
 }
 
 export function Root() {
   const [darkMode, setDarkMode] = useState(false);
-  const [user, setUser] = useState<UserData | null>(null);
+  const [user, setUser] = useState<UserModel | null>(null);
 
   // If user is not logged in, show auth page
   if (!user) {

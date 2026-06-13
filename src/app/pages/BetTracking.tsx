@@ -17,11 +17,12 @@ import "react-day-picker/dist/style.css";
 import { calculatePotentialWin } from "../models/models";
 import { PlacedBet } from "../models/bet";
 import { PlacedBetCard } from "../components/PlacedBetCard";
-import { fetchBets, updateBet } from "../eventsApiClient";
+import { fetchUserBets, updateBet } from "../eventsApiClient";
 
 export function BetTrackingPage() {
   const navigate = useNavigate();
-  const { darkMode } = useDarkMode();
+  const { darkMode, user } = useDarkMode();
+  const userId = user?.id;
   const [refreshKey, setRefreshKey] = useState(0);
   const [allBets, setAllBets] = useState<PlacedBet[]>([]);
   const [showAllBets, setShowAllBets] = useState(false);
@@ -38,12 +39,14 @@ export function BetTrackingPage() {
   const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!userId) return;
+
     async function loadBets() {
       setIsLoading(true);
       setLoadError(null);
 
       try {
-        const mapped = await fetchBets();
+        const mapped = await fetchUserBets(userId);
         mapped.sort(
           (a, b) =>
             new Date(b.eventDate).getTime() - new Date(a.eventDate).getTime(),
@@ -57,7 +60,7 @@ export function BetTrackingPage() {
     }
 
     void loadBets();
-  }, [refreshKey, selectedDate]);
+  }, [refreshKey, userId]);
 
   const filteredBets = useMemo(() => {
     if (showAllBets) {

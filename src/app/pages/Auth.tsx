@@ -1,18 +1,11 @@
 import { useState } from "react";
 import { TrendingUp, ArrowRight } from "lucide-react";
 import { Tier } from "./Subscription";
+import { loginUser, registerUser } from "../eventsApiClient";
+import { UserModel } from "../models/user";
 
 interface AuthPageProps {
-  onLogin: (userData: UserData) => void;
-}
-
-export interface UserData {
-  phoneNumber: string;
-  firstName: string;
-  lastName: string;
-  username: string;
-  state: string;
-  subscriptionTier: Tier;
+  onLogin: (userData: UserModel) => void;
 }
 
 const US_STATES = [
@@ -83,6 +76,7 @@ export function AuthPage({ onLogin }: AuthPageProps) {
   });
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const validateSignUpForm = () => {
     const newErrors: { [key: string]: string } = {};
@@ -140,28 +134,49 @@ export function AuthPage({ onLogin }: AuthPageProps) {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSignUpSubmit = (e: React.FormEvent) => {
+  const handleSignUpSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (validateSignUpForm()) {
-      onLogin(formData);
+      setIsSubmitting(true);
+      try {
+        const user = await registerUser({
+          phoneNumber: formData.phoneNumber,
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          username: formData.username,
+          state: formData.state,
+        });
+        onLogin(user);
+      } catch (error) {
+        setErrors({
+          form:
+            error instanceof Error
+              ? error.message
+              : "Failed to create account.",
+        });
+      } finally {
+        setIsSubmitting(false);
+      }
     }
   };
 
-  const handleLoginSubmit = (e: React.FormEvent) => {
+  const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (validateLoginForm()) {
-      // In a real app, this would authenticate the user
-      // For now, we'll create a mock user object
-      onLogin({
-        phoneNumber: loginData.identifier,
-        firstName: "Demo",
-        lastName: "User",
-        username: loginData.identifier,
-        state: "NY",
-        subscriptionTier: "free",
-      });
+      setIsSubmitting(true);
+      try {
+        const user = await loginUser(loginData.identifier);
+        onLogin(user);
+      } catch (error) {
+        setErrors({
+          identifier:
+            error instanceof Error ? error.message : "Failed to log in.",
+        });
+      } finally {
+        setIsSubmitting(false);
+      }
     }
   };
 
@@ -207,6 +222,9 @@ export function AuthPage({ onLogin }: AuthPageProps) {
           <h2 className="text-2xl font-bold text-gray-900 mb-6">
             {isSignUp ? "Create Your Account" : "Log In"}
           </h2>
+          {errors.form && (
+            <p className="mb-4 text-sm text-red-600">{errors.form}</p>
+          )}
 
           {isSignUp ? (
             // SIGN UP FORM
@@ -379,9 +397,10 @@ export function AuthPage({ onLogin }: AuthPageProps) {
               {/* Submit Button */}
               <button
                 type="submit"
+                disabled={isSubmitting}
                 className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 active:bg-blue-800 transition-colors shadow-md hover:shadow-lg flex items-center justify-center gap-2"
               >
-                Create Account
+                {isSubmitting ? "Creating Account..." : "Create Account"}
                 <ArrowRight className="w-5 h-5" />
               </button>
             </form>
@@ -415,9 +434,10 @@ export function AuthPage({ onLogin }: AuthPageProps) {
               {/* Submit Button */}
               <button
                 type="submit"
+                disabled={isSubmitting}
                 className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 active:bg-blue-800 transition-colors shadow-md hover:shadow-lg flex items-center justify-center gap-2"
               >
-                Log In
+                {isSubmitting ? "Logging In..." : "Log In"}
                 <ArrowRight className="w-5 h-5" />
               </button>
             </form>

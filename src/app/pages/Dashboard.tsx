@@ -16,7 +16,7 @@ import {
   Crown,
   ClipboardList,
 } from "lucide-react";
-import { fetchBets, fetchEvents, saveBet } from "../eventsApiClient";
+import { fetchEvents, fetchUserBets, saveBet } from "../eventsApiClient";
 import { useDarkMode } from "../Root";
 import { PlacedBet } from "../models/bet";
 
@@ -33,7 +33,8 @@ function calculateRecommendedBet(
 
 export function DashboardPage() {
   const navigate = useNavigate();
-  const { darkMode, setDarkMode } = useDarkMode();
+  const { darkMode, setDarkMode, user, setUser } = useDarkMode();
+  const userId = user?.id;
   const [pinnyMode, setPinnyMode] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
   const [bankroll, setBankroll] = useState(1000);
@@ -88,12 +89,14 @@ export function DashboardPage() {
   }, [refreshKey, selectedLeagues, pinnyMode]);
 
   useEffect(() => {
+    if (!userId) return;
+
     async function loadBets() {
       setIsLoading(true);
       setLoadError(null);
 
       try {
-        const mapped = await fetchBets(dateRange[0], dateRange[1]);
+        const mapped = await fetchUserBets(userId, dateRange[0], dateRange[1]);
         setPlacedBets(mapped);
       } catch (error) {
         setLoadError("Failed to load bets.");
@@ -103,7 +106,7 @@ export function DashboardPage() {
     }
 
     void loadBets();
-  }, [refreshKey, dateRange]);
+  }, [refreshKey, dateRange, userId]);
 
   const filteredEvents = useMemo(() => {
     const placedBetIds = new Set(placedBets.map((b) => b.id));
@@ -165,12 +168,26 @@ export function DashboardPage() {
     setHiddenBets((prev) => new Set(prev).add(betId));
   };
 
-  const handlePlaceBet = (bet: PlacedBet) => {
-    saveBet(bet);
-    alert(
-      `Bet ${bet.id} placed successfully at ${bet.sportsbook} for $${bet.amount}!`,
-    );
-    handleHideBet(bet.id);
+  const handlePlaceBet = async (bet: PlacedBet) => {
+    if (!userId) return;
+
+    try {
+      const betWithUser = { ...bet, user: userId };
+      const savedUser = await saveBet(userId, betWithUser);
+      setUser(savedUser);
+      setPlacedBets((prev) => [
+        ...prev.filter((placedBet) => placedBet.id !== bet.id),
+        betWithUser,
+      ]);
+      alert(
+        `Bet ${bet.id} placed successfully at ${bet.sportsbook} for $${bet.amount}!`,
+      );
+      handleHideBet(bet.id);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to place bet.";
+      setLoadError(message);
+    }
   };
 
   const handleRefresh = () => {

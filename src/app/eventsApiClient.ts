@@ -1,6 +1,7 @@
 import { Event } from "./components/EventCard";
 import { PlacedBet } from "./models/bet";
 import { Bet } from "./models/models";
+import { UserModel } from "./models/user";
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ?? "http://localhost:4000";
@@ -43,6 +44,14 @@ type ApiEventsResponse = {
   data: ApiEvent[];
   nextCursor?: string;
   notice?: string;
+};
+
+type RegisterUserRequest = {
+  phoneNumber: string;
+  firstName: string;
+  lastName: string;
+  username: string;
+  state: string;
 };
 
 export const SPORTSBOOK_LABELS: Record<string, string> = {
@@ -329,7 +338,6 @@ export async function fetchEvents(
   params.set("finalized", "false");
   params.set("live", "false");
   params.set("startsAfter", nowIso);
-  // params.set("includeAltLines", "true");
   params.set("limit", "1");
   if (leagues.length > 0) {
     params.set("leagueID", leagues.join(","));
@@ -394,18 +402,103 @@ export async function fetchBets(
   return json.data as PlacedBet[];
 }
 
-export async function saveBet(bet: PlacedBet): Promise<void> {
-  return fetch(`${API_BASE_URL}/api/bets`, {
+export async function fetchUserBets(
+  userId: string,
+  startsAfter?: string,
+  startsBefore?: string,
+): Promise<PlacedBet[]> {
+  const params = new URLSearchParams();
+  if (startsAfter) {
+    params.set("startsAfter", startsAfter);
+  }
+  if (startsBefore) {
+    params.set("startsBefore", startsBefore);
+  }
+  const response = await fetch(
+    `${API_BASE_URL}/api/users/${encodeURIComponent(userId)}/bets?${params.toString()}`,
+  );
+  if (!response.ok) {
+    throw new Error(`Failed to fetch user bets (status ${response.status}).`);
+  }
+  const json = await response.json();
+  if (!json.success || !Array.isArray(json.data)) {
+    throw new Error("Unexpected response shape when fetching user bets.");
+  }
+  return json.data as PlacedBet[];
+}
+
+export async function saveBet(
+  userId: string,
+  bet: PlacedBet,
+): Promise<UserModel> {
+  const response = await fetch(
+    `${API_BASE_URL}/api/users/${encodeURIComponent(userId)}/bets`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(bet),
+    },
+  );
+
+  if (!response.ok) {
+    throw new Error(`Failed to save bet (status ${response.status}).`);
+  }
+
+  const json = await response.json();
+  if (!json.success || !json.user) {
+    throw new Error("Unexpected response shape when saving bet.");
+  }
+  return json.user as UserModel;
+}
+
+export async function registerUser(
+  user: RegisterUserRequest,
+): Promise<UserModel> {
+  const response = await fetch(`${API_BASE_URL}/api/users/register`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify(bet),
-  }).then((response) => {
-    if (!response.ok) {
-      throw new Error(`Failed to save bet (status ${response.status}).`);
-    }
+    body: JSON.stringify(user),
   });
+
+  if (!response.ok) {
+    const json = await response.json().catch(() => null);
+    throw new Error(
+      json?.error ?? `Failed to register (status ${response.status}).`,
+    );
+  }
+
+  const json = await response.json();
+  if (!json.success || !json.user) {
+    throw new Error("Unexpected response shape when registering.");
+  }
+  return json.user as UserModel;
+}
+
+export async function loginUser(identifier: string): Promise<UserModel> {
+  const response = await fetch(`${API_BASE_URL}/api/users/login`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ identifier }),
+  });
+
+  if (!response.ok) {
+    const json = await response.json().catch(() => null);
+    throw new Error(
+      json?.error ?? `Failed to log in (status ${response.status}).`,
+    );
+  }
+
+  const json = await response.json();
+  if (!json.success || !json.user) {
+    throw new Error("Unexpected response shape when logging in.");
+  }
+  return json.user as UserModel;
 }
 
 export async function updateBet(bet: PlacedBet): Promise<void> {

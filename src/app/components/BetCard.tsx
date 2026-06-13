@@ -92,6 +92,7 @@ export function BetCard({
                   onClick={() => {
                     onPlace({
                       id: bet.id,
+                      user: "",
                       eventId: event.id,
                       eventName: event.name,
                       league: event.league,

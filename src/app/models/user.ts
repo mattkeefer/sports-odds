@@ -1,4 +1,3 @@
-import { PlacedBet } from "./bet";
 import { getListOfLeagues, getListOfSportsbooks } from "./models";
 
 export type SubscriptionTier = "free" | "pro" | "elite";
@@ -38,9 +37,10 @@ export interface UserModel {
   username: string;
   firstName: string;
   lastName: string;
+  state: string;
   savedFilters: UserFilters;
   subscription: UserSubscription;
-  placedBets: PlacedBet[];
+  placedBets: string[];
 }
 
 export function createDefaultUserFilters(): UserFilters {
@@ -64,6 +64,6 @@ export function createDefaultSubscription(): UserSubscription {
   };
 }
 
-export function createDefaultPlacedBets(): PlacedBet[] {
+export function createDefaultPlacedBets(): string[] {
   return [];
 }
