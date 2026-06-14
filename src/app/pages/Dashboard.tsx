@@ -11,6 +11,7 @@ import {
   AlertTriangle,
   Crown,
   ClipboardList,
+  Eye,
 } from "lucide-react";
 import { fetchEvents, fetchUserBets, saveBet } from "../eventsApiClient";
 import { useDarkMode } from "../Root";
@@ -201,6 +202,9 @@ export function DashboardPage() {
 
   const handleRefresh = () => {
     setRefreshKey((prev) => prev + 1);
+  };
+
+  const handleShowHiddenBets = () => {
     setHiddenBets(new Set());
   };
 
@@ -276,6 +280,21 @@ export function DashboardPage() {
               >
                 <RefreshCw className="w-5 h-5" />
               </button>
+
+              {hiddenBets.size > 0 && (
+                <button
+                  onClick={handleShowHiddenBets}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
+                    darkMode
+                      ? "bg-gray-800 text-gray-300 hover:bg-gray-700"
+                      : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-300"
+                  }`}
+                  title="Show hidden bets"
+                >
+                  <Eye className="w-4 h-4" />
+                  <span className="text-sm font-medium">Show Hidden Bets</span>
+                </button>
+              )}
 
               <button
                 onClick={() => navigate("/tracking")}
