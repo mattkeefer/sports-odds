@@ -2,11 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import { FilterPanel } from "../components/FilterPanel";
 import { EventCard, Event } from "../components/EventCard";
-import {
-  BookListing,
-  getListOfLeagues,
-  getListOfSportsbooks,
-} from "../models/models";
+import { BookListing } from "../models/models";
 import {
   TrendingUp,
   Moon,
@@ -33,22 +29,28 @@ function calculateRecommendedBet(
 
 export function DashboardPage() {
   const navigate = useNavigate();
-  const { darkMode, setDarkMode, user, setUser } = useDarkMode();
+  const { darkMode, setDarkMode, user, setUser, dashboardConfig } =
+    useDarkMode();
+  const {
+    pinnyMode,
+    setPinnyMode,
+    bankroll,
+    setBankroll,
+    selectedSportsbooks,
+    setSelectedSportsbooks,
+    oddsRange,
+    setOddsRange,
+    minEV,
+    setMinEV,
+    selectedLeagues,
+    setSelectedLeagues,
+    dateRange,
+    setDateRange,
+    filtersExpanded,
+    setFiltersExpanded,
+  } = dashboardConfig;
   const userId = user?.id;
-  const [pinnyMode, setPinnyMode] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
-  const [bankroll, setBankroll] = useState(1000);
-  const [selectedSportsbooks, setSelectedSportsbooks] = useState<string[]>(
-    getListOfSportsbooks(),
-  );
-  const [oddsRange, setOddsRange] = useState<[number, number]>([-300, 200]);
-  const [minEV, setMinEV] = useState(2.5);
-  const [selectedLeagues, setSelectedLeagues] =
-    useState<string[]>(getListOfLeagues());
-  const [dateRange, setDateRange] = useState<[string, string]>([
-    new Date().toISOString().split("T")[0],
-    new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
-  ]);
   const [hiddenBets, setHiddenBets] = useState<Set<string>>(new Set());
   const [events, setEvents] = useState<Event[]>([]);
   const [placedBets, setPlacedBets] = useState<PlacedBet[]>([]);
@@ -352,6 +354,8 @@ export function DashboardPage() {
           setSelectedLeagues={setSelectedLeagues}
           dateRange={dateRange}
           setDateRange={setDateRange}
+          isExpanded={filtersExpanded}
+          setIsExpanded={setFiltersExpanded}
         />
 
         <div className="space-y-4">

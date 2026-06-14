@@ -1,21 +1,23 @@
 import { Filter, DollarSign } from "lucide-react";
-import { useState } from "react";
+import type { Dispatch, SetStateAction } from "react";
 import { SPORTSBOOK_LABELS } from "../eventsApiClient";
 
 interface FilterPanelProps {
   darkMode: boolean;
   bankroll: number;
-  setBankroll: (value: number) => void;
+  setBankroll: Dispatch<SetStateAction<number>>;
   selectedSportsbooks: string[];
-  setSelectedSportsbooks: (value: string[]) => void;
+  setSelectedSportsbooks: Dispatch<SetStateAction<string[]>>;
   oddsRange: [number, number];
-  setOddsRange: (value: [number, number]) => void;
+  setOddsRange: Dispatch<SetStateAction<[number, number]>>;
   minEV: number;
-  setMinEV: (value: number) => void;
+  setMinEV: Dispatch<SetStateAction<number>>;
   selectedLeagues: string[];
-  setSelectedLeagues: (value: string[]) => void;
+  setSelectedLeagues: Dispatch<SetStateAction<string[]>>;
   dateRange: [string, string];
-  setDateRange: (value: [string, string]) => void;
+  setDateRange: Dispatch<SetStateAction<[string, string]>>;
+  isExpanded: boolean;
+  setIsExpanded: Dispatch<SetStateAction<boolean>>;
 }
 
 const LEAGUES = [
@@ -42,9 +44,9 @@ export function FilterPanel({
   setSelectedLeagues,
   dateRange,
   setDateRange,
+  isExpanded,
+  setIsExpanded,
 }: FilterPanelProps) {
-  const [isExpanded, setIsExpanded] = useState(true);
-
   const toggleSportsbook = (sportsbook: string) => {
     if (selectedSportsbooks.includes(sportsbook)) {
       setSelectedSportsbooks(
